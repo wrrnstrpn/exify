@@ -42,7 +42,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   recursive: true,
-  keepBackups: false,
+  keepBackups: true,
   preserveFileDates: true,
   thumbSize: 168,
   view: 'grid',

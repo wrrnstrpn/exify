@@ -23,6 +23,11 @@ interface Props {
   inputMode?: 'text' | 'decimal' | 'numeric'
   /** Format the committed value for display (e.g. ƒ/ prefix for selects). */
   display?: (value: string) => string
+  /**
+   * Commit typed text when focus leaves. Turn off for catalog pickers, where the
+   * text is usually a search query; custom values then need an explicit Enter.
+   */
+  commitOnBlur?: boolean
 }
 
 function matches(o: Option, tokens: string[]): boolean {
@@ -50,7 +55,8 @@ export function Combobox({
   leading,
   popoverWidth,
   inputMode = 'text',
-  display
+  display,
+  commitOnBlur = true
 }: Props): JSX.Element {
   const wrapRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -170,7 +176,8 @@ export function Combobox({
         }}
         onBlur={() => {
           setFocused(false)
-          commitText()
+          if (commitOnBlur) commitText()
+          else setDirty(false)
           setOpen(false)
         }}
         onChange={(e) => {

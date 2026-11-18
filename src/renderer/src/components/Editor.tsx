@@ -361,11 +361,11 @@ function MetaForm({ sel }: { sel: PhotoRecord[] }): JSX.Element {
       case 'Make':
         return <Combobox {...p} value={effStr(k)} placeholder={ph || 'e.g. Canon'} options={() => makeOptions(allRecords, settings)} onCommit={(v) => set({ Make: v || null })} />
       case 'Model':
-        return <Combobox {...p} value={effStr(k)} placeholder={ph || 'Search cameras…'} options={() => modelOptions(allRecords, settings, ctx)} onCommit={onModel} popoverWidth={380} />
+        return <Combobox {...p} value={effStr(k)} placeholder={ph || 'Search cameras…'} options={() => modelOptions(allRecords, settings, ctx)} onCommit={onModel} popoverWidth={380} commitOnBlur={false} />
       case 'LensMake':
         return <Combobox {...p} value={effStr(k)} placeholder={ph} options={() => lensMakeOptions(allRecords)} onCommit={(v) => set({ LensMake: v || null })} />
       case 'LensModel':
-        return <Combobox {...p} value={effStr(k)} placeholder={ph || 'Search lenses…'} options={() => lensOptions(allRecords, settings, ctx)} onCommit={onLens} popoverWidth={420} />
+        return <Combobox {...p} value={effStr(k)} placeholder={ph || 'Search lenses…'} options={() => lensOptions(allRecords, settings, ctx)} onCommit={onLens} popoverWidth={420} commitOnBlur={false} />
       case 'FocalLength':
         return <Combobox {...p} value={effStr(k)} placeholder={ph || 'mm'} options={() => focalOptions(ctx)} onCommit={onFocal} inputMode="decimal" display={(v) => `${v} mm`} />
       case 'FocalLengthIn35mmFormat':
@@ -401,7 +401,7 @@ function MetaForm({ sel }: { sel: PhotoRecord[] }): JSX.Element {
       case 'DateTimeOriginal':
       case 'CreateDate':
       case 'ModifyDate':
-        return <DateTimeField {...p} value={effStr(k)} placeholder={ph || undefined} onCommit={onDate(k)} />
+        return <DateTimeField {...p} value={effStr(k)} placeholder={ph || 'Not set'} onCommit={onDate(k)} />
       case 'OffsetTimeOriginal':
         return <Combobox {...p} value={effStr(k)} placeholder={ph || '+00:00'} options={TZ_OPTIONS} onCommit={(v) => set({ OffsetTimeOriginal: v || null })} />
       case 'ImageDescription':
