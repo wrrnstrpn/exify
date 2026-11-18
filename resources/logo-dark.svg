@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2240 1024" width="2240" height="1024">
+<defs><linearGradient id="lbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#262833"/><stop offset="1" stop-color="#0E0F14"/></linearGradient><linearGradient id="ledge" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.18"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0.02"/></linearGradient><linearGradient id="lring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.30"/><stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.05"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0.22"/></linearGradient><linearGradient id="lb0" gradientUnits="userSpaceOnUse" x1="464.72" y1="548.94" x2="762.59" y2="316.22"><stop offset="0" stop-color="#FFC46B"/><stop offset="1" stop-color="#F59E2E"/></linearGradient><linearGradient id="lb1" gradientUnits="userSpaceOnUse" x1="456.37" y1="489.52" x2="806.84" y2="631.12"><stop offset="0" stop-color="#FF8A5B"/><stop offset="1" stop-color="#E9573A"/></linearGradient><linearGradient id="lb2" gradientUnits="userSpaceOnUse" x1="503.65" y1="452.58" x2="556.26" y2="826.91"><stop offset="0" stop-color="#F7609A"/><stop offset="1" stop-color="#D23673"/></linearGradient><linearGradient id="lb3" gradientUnits="userSpaceOnUse" x1="559.28" y1="475.06" x2="261.41" y2="707.78"><stop offset="0" stop-color="#B66CF5"/><stop offset="1" stop-color="#8A42E0"/></linearGradient><linearGradient id="lb4" gradientUnits="userSpaceOnUse" x1="567.63" y1="534.48" x2="217.16" y2="392.88"><stop offset="0" stop-color="#6F7CFF"/><stop offset="1" stop-color="#4552E6"/></linearGradient><linearGradient id="lb5" gradientUnits="userSpaceOnUse" x1="520.35" y1="571.42" x2="467.74" y2="197.09"><stop offset="0" stop-color="#3FD0D4"/><stop offset="1" stop-color="#1B9FB0"/></linearGradient>
+<linearGradient id="lword" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#C9CBD6"/></linearGradient>
+<linearGradient id="ldot" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFC46B"/><stop offset="0.5" stop-color="#F7609A"/><stop offset="1" stop-color="#6F7CFF"/></linearGradient>
+</defs>
+<rect x="40" y="40" width="944" height="944" rx="224" fill="url(#lbg)"/>
+<rect x="42" y="42" width="940" height="940" rx="222" fill="none" stroke="url(#ledge)" stroke-width="4"/>
+<circle cx="512" cy="512" r="344" fill="none" stroke="url(#lring)" stroke-width="6"/>
+<g stroke="#121318" stroke-width="9" stroke-linejoin="round">
+<path d="M600.26 443.05 L829.13 535.52 A318 318 0 0 1 650.20 798.40 Z" fill="url(#lb0)"/>
+<path d="M615.84 553.96 L650.20 798.40 A318 318 0 0 1 333.07 774.88 Z" fill="url(#lb1)"/>
+<path d="M527.59 622.91 L333.07 774.88 A318 318 0 0 1 194.87 488.48 Z" fill="url(#lb2)"/>
+<path d="M423.74 580.95 L194.87 488.48 A318 318 0 0 1 373.80 225.60 Z" fill="url(#lb3)"/>
+<path d="M408.16 470.04 L373.80 225.60 A318 318 0 0 1 690.93 249.12 Z" fill="url(#lb4)"/>
+<path d="M496.41 401.09 L690.93 249.12 A318 318 0 0 1 829.13 535.52 Z" fill="url(#lb5)"/>
+</g>
+<polygon points="496.41,401.09 600.26,443.05 615.84,553.96 527.59,622.91 423.74,580.95 408.16,470.04" fill="#0B0C10"/>
+<circle cx="478" cy="474" r="17" fill="#FFFFFF" opacity="0.92"/>
+<circle cx="542" cy="538" r="7" fill="#FFFFFF" opacity="0.45"/>
+<text x="1120" y="700" font-family="'Segoe UI Variable Display','Segoe UI','Inter','Helvetica Neue',Arial,sans-serif" font-weight="600" font-size="440" letter-spacing="-10" fill="url(#lword)">ex<tspan>ı</tspan>fy</text>
+<polygon points="1597.15,362.41 1636.10,378.14 1641.94,419.73 1608.85,445.59 1569.90,429.86 1564.06,388.27" fill="url(#ldot)"/>
+</svg>

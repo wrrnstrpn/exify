@@ -1,0 +1,36 @@
+{
+  "name": "exify",
+  "productName": "Exify",
+  "version": "1.0.0",
+  "description": "Fast batch EXIF metadata editor for photo folders",
+  "main": "./out/main/index.js",
+  "author": "Exify",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/run.mjs dev",
+    "build": "electron-vite build",
+    "preview": "node scripts/run.mjs preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "logo": "node scripts/make-logo.mjs && node scripts/run-electron.mjs scripts/render-icons.cjs",
+    "dist": "electron-vite build && electron-builder --win",
+    "dist:dir": "electron-vite build && electron-builder --win --dir"
+  },
+  "dependencies": {
+    "exiftool-vendored": "39.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "electron": "45.3.4",
+    "electron-builder": "26.18.0",
+    "electron-vite": "6.0.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "5.9.3",
+    "vite": "8.3.8",
+    "zustand": "5.1.0"
+  }
+}

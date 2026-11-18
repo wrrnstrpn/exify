@@ -1,0 +1,21 @@
+appId: app.exify.desktop
+productName: Exify
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**/*
+  - package.json
+asarUnpack:
+  - node_modules/exiftool-vendored.exe/**
+win:
+  icon: build/icon.png
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  artifactName: Exify-Setup-${version}.exe
+fileAssociations: []
