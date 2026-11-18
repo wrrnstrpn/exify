@@ -14,6 +14,9 @@ updates:
       # Electron majors change Chromium/Node; upgrade those deliberately.
       - dependency-name: electron
         update-types: [version-update:semver-major]
+      # Node types must match the Node version bundled in Electron (Electron 45 = Node 24).
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
 
   # GitHub Actions used by CI.
   - package-ecosystem: github-actions
