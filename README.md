@@ -6,7 +6,21 @@
 <p align="center"><b>Fast batch EXIF editor for whole folders of photos.</b><br>
 Camera & lens dropdowns, mismatch detection, filters, presets, date tools and undo — for JPEG, HEIC, TIFF, PNG and RAW.</p>
 
----
+<p align="center">
+  <a href="https://github.com/wrrnstrpn/exify/releases/latest">Download for Windows</a> ·
+  <a href="#features">Features</a> ·
+  <a href="#building-from-source">Build from source</a>
+</p>
+
+<p align="center"><img src="docs/screenshots/mismatch.jpg" alt="Exify flagging an aperture of f/1.8 on an f/2.8 zoom lens" width="900"></p>
+
+## Download
+
+Get the latest **`Exify-Setup-x.y.z.exe`** from [Releases](https://github.com/wrrnstrpn/exify/releases/latest). It installs for your Windows user only and doesn't need admin rights. ExifTool is included, so there's nothing else to install.
+
+> **Windows SmartScreen:** the installer isn't code-signed yet, so Windows may say *"Windows protected your PC"* the first time. Click **More info → Run anyway**.
+
+Exify writes metadata into your files. **Keep backup copies** is on by default: the untouched original is kept next to each edited file as `name.jpg_original`. Undo also works for every write during a session. You can turn backups off in Settings once you trust your workflow.
 
 ## Features
 
@@ -26,18 +40,19 @@ Camera & lens dropdowns, mismatch detection, filters, presets, date tools and un
 - **Filters:** search, camera, lens, folder, file type, date range, ISO, focal length and aperture ranges, rating, *missing* fields (no date, no GPS, …) and *flagged / errors / clean*.
 - **Date tools:** shift by an offset to fix a wrong camera clock, or sequence dates in on-screen order (useful for film scans).
 - **Presets** for gear combos, **Sync** fields from the focused photo, keywords that can be added to or removed from a whole batch, a ★ rating, GPS (paste `lat, lon`), copyright helper.
-- **Undo** for every write in the session. Optionally keeps `_original` backups. File modified dates are preserved.
+- **Safety:** backups on by default, undo for every write in the session, and file modified dates are preserved.
 - **All tags** inspector, **CSV export**, lightbox preview, and drag & drop to open a folder.
 
-## Getting started
-
-```bash
-npm install
-npm run dev        # run the app with hot reload
-npm run dist       # build a Windows installer into dist/
-```
-
-Requires Node 20+ on Windows. ExifTool is bundled automatically via [`exiftool-vendored`](https://github.com/photostructure/exiftool-vendored.js).
+<table>
+  <tr>
+    <td><img src="docs/screenshots/lens-dropdown.jpg" alt="Lens dropdown grouped by what fits the selected camera, with an incompatible RF lens flagged"></td>
+    <td><img src="docs/screenshots/batch.jpg" alt="Batch editing twelve photos with Mixed values"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Lenses that fit the body come first; ones that don't are flagged.</sub></td>
+    <td align="center"><sub>Batch-edit any number of photos at once.</sub></td>
+  </tr>
+</table>
 
 ### Keyboard
 
@@ -52,7 +67,27 @@ Requires Node 20+ on Windows. ExifTool is bundled automatically via [`exiftool-v
 | `Ctrl+F` | Search |
 | `F5` | Rescan folder |
 
-## Project layout
+## About the gear database
+
+The camera and lens lists are **best-effort**. Mainstream bodies and lenses (especially Canon, Nikon, Sony and Fujifilm) use the exact model strings those cameras write. Some entries are less certain, such as drone and phone model codes and very recent releases. If you spot a wrong or missing entry, please [open an issue](https://github.com/wrrnstrpn/exify/issues) or a pull request.
+
+Gear you type that isn't in the list is remembered automatically under **My gear**.
+
+Camera and lens names are trademarks of their respective owners. Exify is not affiliated with or endorsed by Canon, Nikon, Sony, Fujifilm or any other manufacturer.
+
+## Building from source
+
+```bash
+npm install
+npm run dev         # run the app with hot reload
+npm test            # unit + ExifTool integration tests
+npm run typecheck
+npm run dist        # build a Windows installer into dist/
+```
+
+Requires Node 20+ on Windows.
+
+### Project layout
 
 ```
 src/
@@ -63,12 +98,17 @@ src/
     data/      Camera & lens database (mounts, crop factors)
     lib/       Validation, filtering, dropdown option builders
     components/
+tests/         Vitest suites and image fixtures
 resources/     Logo & icon sources (SVG) and renders
-scripts/       make-logo.mjs (SVG generator), render-icons.cjs (rasteriser)
+scripts/       Logo generator/rasteriser and Electron launch helpers
 ```
 
 To regenerate the logo after editing `scripts/make-logo.mjs`, run `npm run logo`.
 
 ### Adding gear
 
-Bodies go in `src/renderer/src/data/cameras.ts` and lenses in `src/renderer/src/data/lenses.ts`. Each entry is `[exifModelString, mount, friendlyLabel?]`. Gear you type that isn't in the list is remembered automatically under **My gear**.
+Bodies go in `src/renderer/src/data/cameras.ts` and lenses in `src/renderer/src/data/lenses.ts`. Each entry is `[exifModelString, mount, friendlyLabel?]`. `npm test` checks for duplicates and unknown mounts.
+
+## Credits & licence
+
+Exify is [MIT licensed](LICENSE). It's built on [ExifTool](https://exiftool.org) by Phil Harvey and [exiftool-vendored](https://github.com/photostructure/exiftool-vendored.js) by PhotoStructure. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the bundled software and its licences.
