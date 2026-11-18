@@ -4,17 +4,26 @@
   "version": "1.0.0",
   "description": "Fast batch EXIF metadata editor for photo folders",
   "main": "./out/main/index.js",
-  "author": "Exify",
+  "author": "wrrnstrpn",
   "license": "MIT",
+  "homepage": "https://github.com/wrrnstrpn/exify",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wrrnstrpn/exify.git"
+  },
+  "bugs": {
+    "url": "https://github.com/wrrnstrpn/exify/issues"
+  },
   "private": true,
   "scripts": {
     "dev": "node scripts/run.mjs dev",
     "build": "electron-vite build",
     "preview": "node scripts/run.mjs preview",
-    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p tsconfig.test.json",
     "logo": "node scripts/make-logo.mjs && node scripts/run-electron.mjs scripts/render-icons.cjs",
     "dist": "electron-vite build && electron-builder --win",
-    "dist:dir": "electron-vite build && electron-builder --win --dir"
+    "dist:dir": "electron-vite build && electron-builder --win --dir",
+    "test": "vitest run"
   },
   "dependencies": {
     "exiftool-vendored": "39.4.0"
@@ -31,6 +40,7 @@
     "react-dom": "19.3.1",
     "typescript": "5.9.3",
     "vite": "8.3.8",
+    "vitest": "5.1.1",
     "zustand": "5.1.0"
   }
 }
