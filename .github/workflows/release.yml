@@ -37,16 +37,32 @@ jobs:
       - run: npx electron-vite build
 
       - name: Package and upload
-        run: npx electron-builder ${{ matrix.target }} --publish always
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Optional. Leave these secrets unset and the builds come out unsigned.
-          # Windows: a .pfx code-signing certificate, base64-encoded, and its password.
-          # macOS: a Developer ID certificate (.p12) and its password, plus Apple ID details for notarisation.
-          CSC_LINK: ${{ matrix.os == 'windows-latest' && secrets.WIN_CSC_LINK || matrix.os == 'macos-latest' && secrets.MAC_CSC_LINK || '' }}
-          CSC_KEY_PASSWORD: ${{ matrix.os == 'windows-latest' && secrets.WIN_CSC_KEY_PASSWORD || matrix.os == 'macos-latest' && secrets.MAC_CSC_KEY_PASSWORD || '' }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          # Without a certificate, don't let electron-builder go looking in the keychain.
-          CSC_IDENTITY_AUTO_DISCOVERY: ${{ (matrix.os == 'macos-latest' && secrets.MAC_CSC_LINK) && 'true' || 'false' }}
+          # All optional. Leave the secrets unset and the builds come out unsigned.
+          # Windows: a base64 .pfx code-signing certificate and its password.
+          # macOS: a base64 Developer ID .p12 and its password, plus Apple ID details for notarisation.
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID_SECRET: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD_SECRET: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_SECRET: ${{ secrets.APPLE_TEAM_ID }}
+        # electron-builder treats an empty CSC_LINK as a path, so only export what's actually set.
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ] && [ -n "$WIN_CSC_LINK" ]; then
+            export CSC_LINK="$WIN_CSC_LINK" CSC_KEY_PASSWORD="$WIN_CSC_KEY_PASSWORD"
+          fi
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            if [ -n "$MAC_CSC_LINK" ]; then
+              export CSC_LINK="$MAC_CSC_LINK" CSC_KEY_PASSWORD="$MAC_CSC_KEY_PASSWORD"
+            else
+              export CSC_IDENTITY_AUTO_DISCOVERY=false
+            fi
+            if [ -n "$APPLE_ID_SECRET" ]; then
+              export APPLE_ID="$APPLE_ID_SECRET" APPLE_APP_SPECIFIC_PASSWORD="$APPLE_PASSWORD_SECRET" APPLE_TEAM_ID="$APPLE_TEAM_SECRET"
+            fi
+          fi
+          npx electron-builder ${{ matrix.target }} --publish always

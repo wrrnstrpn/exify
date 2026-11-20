@@ -51,6 +51,8 @@ linux:
   icon: build/icon.png
   category: Graphics;Photography
   synopsis: Batch EXIF editor for folders of photos
+  # .deb packages must name a maintainer with an email address.
+  maintainer: wrrnstrpn <wrrnstrpn@users.noreply.github.com>
   target:
     - target: AppImage
       arch: [x64]
