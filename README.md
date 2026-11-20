@@ -61,11 +61,19 @@ Exify writes metadata into your files. **Keep backup copies** is on by default: 
 <table>
   <tr>
     <td><img src="docs/screenshots/lens-dropdown.jpg" alt="Lens dropdown grouped by what fits the selected camera, with an incompatible RF lens flagged"></td>
-    <td><img src="docs/screenshots/batch.jpg" alt="Batch editing twelve photos with Mixed values"></td>
+    <td><img src="docs/screenshots/batch.jpg" alt="Batch editing thirteen photos with Mixed values"></td>
   </tr>
   <tr>
     <td align="center"><sub>Lenses that fit the body come first; ones that don't are flagged.</sub></td>
     <td align="center"><sub>Batch-edit any number of photos at once.</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/geotag.jpg" alt="Geotagging nine photos from a GPX track, shown on a map of the hiking loop"></td>
+    <td><img src="docs/screenshots/import.jpg" alt="Importing a film shooting log, with columns mapped to fields and rows matched to scans by frame number"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Match photos to a GPX track and check them on the map first.</sub></td>
+    <td align="center"><sub>Fill in a roll of film scans from a shooting log.</sub></td>
   </tr>
 </table>
 
