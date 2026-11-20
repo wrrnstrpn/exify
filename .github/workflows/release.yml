@@ -1,7 +1,7 @@
 name: Release
 
-# Push a tag like v1.1.0 (matching package.json) to build installers for all three
-# platforms and attach them, plus the latest*.yml files the auto-updater reads, to a
+# Push a tag like v1.1.0 (matching package.json) to build the Windows and Linux
+# installers and attach them, plus the latest*.yml files the auto-updater reads, to a
 # draft GitHub release. Check the draft over, then publish it.
 on:
   push:
@@ -18,8 +18,6 @@ jobs:
         include:
           - os: windows-latest
             target: --win
-          - os: macos-latest
-            target: --mac
           - os: ubuntu-latest
             target: --linux
     runs-on: ${{ matrix.os }}
@@ -42,27 +40,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # All optional. Leave the secrets unset and the builds come out unsigned.
           # Windows: a base64 .pfx code-signing certificate and its password.
-          # macOS: a base64 Developer ID .p12 and its password, plus Apple ID details for notarisation.
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-          MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
-          MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
-          APPLE_ID_SECRET: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD_SECRET: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_SECRET: ${{ secrets.APPLE_TEAM_ID }}
         # electron-builder treats an empty CSC_LINK as a path, so only export what's actually set.
         run: |
           if [ "$RUNNER_OS" = "Windows" ] && [ -n "$WIN_CSC_LINK" ]; then
             export CSC_LINK="$WIN_CSC_LINK" CSC_KEY_PASSWORD="$WIN_CSC_KEY_PASSWORD"
-          fi
-          if [ "$RUNNER_OS" = "macOS" ]; then
-            if [ -n "$MAC_CSC_LINK" ]; then
-              export CSC_LINK="$MAC_CSC_LINK" CSC_KEY_PASSWORD="$MAC_CSC_KEY_PASSWORD"
-            else
-              export CSC_IDENTITY_AUTO_DISCOVERY=false
-            fi
-            if [ -n "$APPLE_ID_SECRET" ]; then
-              export APPLE_ID="$APPLE_ID_SECRET" APPLE_APP_SPECIFIC_PASSWORD="$APPLE_PASSWORD_SECRET" APPLE_TEAM_ID="$APPLE_TEAM_SECRET"
-            fi
           fi
           npx electron-builder ${{ matrix.target }} --publish always

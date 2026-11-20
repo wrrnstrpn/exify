@@ -45,4 +45,4 @@ export function useSelection(): PhotoRecord[] {
 
 export const fmtDate = (s: string | undefined | null): string => (s ? s.replace(/^(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3') : '—')
 
-export const revealLabel = api.platform === 'darwin' ? 'Show in Finder' : api.platform === 'win32' ? 'Show in Explorer' : 'Show in folder'
+export const revealLabel = api.platform === 'win32' ? 'Show in Explorer' : 'Show in folder'

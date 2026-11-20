@@ -13,8 +13,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Windows is what most people run; macOS and Linux use the Perl ExifTool, so test those too.
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        # Linux runs the Perl ExifTool rather than the bundled .exe, so it gets tested too.
+        os: [windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:

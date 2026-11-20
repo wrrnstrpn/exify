@@ -262,10 +262,6 @@ kbd {
   border-bottom: 1px solid var(--line);
   -webkit-app-region: drag;
 }
-:root[data-platform='darwin'] .toolbar {
-  /* room for the traffic lights */
-  padding-left: 84px;
-}
 .toolbar .btn,
 .toolbar .icon-btn,
 .toolbar input,

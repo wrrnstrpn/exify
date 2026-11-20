@@ -5,8 +5,6 @@ import { join } from 'node:path'
 import type { UpdateStatus } from '@shared/types'
 
 // Updates come from GitHub Releases (see `publish` in electron-builder.yml).
-// macOS can only install updates for signed apps, so there we just say a new
-// version exists and link to the release page.
 
 let status: UpdateStatus = { state: 'idle' }
 let target: WebContents | null = null
@@ -28,7 +26,7 @@ function unsupportedReason(): string | null {
 function wire(): void {
   if (wired) return
   wired = true
-  autoUpdater.autoDownload = process.platform !== 'darwin'
+  autoUpdater.autoDownload = true
   autoUpdater.autoInstallOnAppQuit = true
   autoUpdater.on('checking-for-update', () => set({ state: 'checking' }))
   autoUpdater.on('update-not-available', () => set({ state: 'none' }))

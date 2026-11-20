@@ -10,7 +10,7 @@ following third-party software, each under its own licence.
   Public License, at your option).
 - Use: Exify runs ExifTool as a separate program to read and write all metadata.
   It is distributed unmodified, including the bundled Perl runtime for Windows. On
-  macOS and Linux it runs on the system's Perl.
+  Linux it runs on the system's Perl.
 
 ## exiftool-vendored
 

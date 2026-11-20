@@ -10,7 +10,7 @@ import { exiftool } from './exif'
 //   exify://preview/?p=<path>&v=<version>
 // `v` only exists to bust the cache after a write.
 //
-// The OS thumbnailer goes first (Windows Explorer / macOS Quick Look): it's fast,
+// The Windows shell thumbnailer goes first: it's fast,
 // cached, and handles RAW if codecs are installed. Linux doesn't have one, so
 // there we decode JPEG/PNG directly or pull the preview ExifTool finds inside RAWs.
 

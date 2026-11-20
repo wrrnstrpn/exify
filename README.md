@@ -21,12 +21,11 @@ Grab the latest build from [Releases](https://github.com/wrrnstrpn/exify/release
 | | File | Notes |
 | --- | --- | --- |
 | Windows | `Exify-Setup-x.y.z.exe` | Installs for your user only, no admin rights needed. ExifTool is bundled. |
-| macOS | `Exify-x.y.z-arm64.dmg` (Apple silicon) or `-x64.dmg` (Intel) | Uses the Perl that ships with macOS. |
 | Linux | `Exify-x.y.z-x86_64.AppImage` or `exify_x.y.z_amd64.deb` | Needs `perl`, which nearly every distro has. |
 
 Installed copies check GitHub for new versions on startup and install them when you quit. You can turn that off in Settings.
 
-> **Unsigned builds:** the apps aren't code-signed yet. On Windows, SmartScreen may say *"Windows protected your PC"*: click **More info → Run anyway**. On macOS, right-click the app and choose **Open** the first time. macOS also can't install updates for unsigned apps, so there Exify tells you a new version is out and links to it instead.
+> **Windows SmartScreen:** the installer isn't code-signed yet, so Windows may say *"Windows protected your PC"* the first time. Click **More info → Run anyway**.
 
 Exify writes metadata into your files. **Keep backup copies** is on by default: the untouched original is kept next to each edited file as `name.jpg_original`, and **Backups…** in the tools menu can put those back or clear them out. Undo also works for every change during a session. RAW files are left alone: their edits go into an XMP sidecar (see below).
 
@@ -84,8 +83,6 @@ Exify writes metadata into your files. **Keep backup copies** is on by default: 
 | `Ctrl+F` | Search |
 | `F5` | Rescan folder |
 
-On macOS use `Cmd` wherever it says `Ctrl`.
-
 ## About the gear database
 
 The camera and lens lists are **best-effort**. Mainstream bodies and lenses (especially Canon, Nikon, Sony and Fujifilm) use the exact model strings those cameras write. Some entries are less certain, such as drone and phone model codes and very recent releases. If you spot a wrong or missing entry, please [open an issue](https://github.com/wrrnstrpn/exify/issues) or a pull request.
@@ -102,24 +99,20 @@ npm run dev         # run the app with hot reload
 npm test            # unit + ExifTool integration tests
 npm run typecheck
 npm run dist        # Windows installer into dist/
-npm run dist:mac    # .dmg and .zip (run on a Mac)
 npm run dist:linux  # AppImage and .deb (run on Linux)
 ```
 
-Requires Node 20+. Each platform's installer has to be built on that platform.
+Requires Node 20+. Each installer has to be built on its own platform.
 
 ### Releasing
 
-Bump `version` in `package.json`, commit, and push a matching tag (`git tag v1.1.0 && git push --tags`). The release workflow builds all three platforms and uploads them to a **draft** GitHub release, together with the `latest*.yml` files the auto-updater reads. Check the draft, then publish it.
+Bump `version` in `package.json`, commit, and push a matching tag (`git tag v1.1.0 && git push --tags`). The release workflow builds the Windows and Linux installers and uploads them to a **draft** GitHub release, together with the `latest*.yml` files the auto-updater reads. Check the draft, then publish it.
 
 ### Code signing
 
-Builds are unsigned unless these repository secrets exist, in which case the release workflow signs with them:
+The Windows installer is unsigned unless the repository has a `WIN_CSC_LINK` secret (a base64-encoded `.pfx` code-signing certificate) and `WIN_CSC_KEY_PASSWORD`, in which case the release workflow signs with them.
 
-- **Windows:** `WIN_CSC_LINK` (a base64-encoded `.pfx` code-signing certificate) and `WIN_CSC_KEY_PASSWORD`.
-- **macOS:** `MAC_CSC_LINK` (a Developer ID Application certificate as base64 `.p12`) and `MAC_CSC_KEY_PASSWORD`, plus `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` for notarisation.
-
-Once Windows releases are signed, also set `win.signtoolOptions.publisherName` in `electron-builder.yml` so the updater checks that updates come from the same publisher.
+Once releases are signed, also set `win.signtoolOptions.publisherName` in `electron-builder.yml` so the updater checks that updates come from the same publisher.
 
 ### Project layout
 

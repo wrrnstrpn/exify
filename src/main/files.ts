@@ -6,7 +6,7 @@ import { findSidecar, movedSidecarPath } from './sidecar'
 
 type Progress = (done: number, total: number) => void
 
-// Windows and macOS file systems ignore case, so "A.JPG" and "a.jpg" are the same file there.
+// Windows ignores case in file names, so "A.JPG" and "a.jpg" are the same file there.
 const key = (p: string): string => (process.platform === 'linux' ? p : p.toLowerCase())
 
 /** Every file that has to travel with a photo: itself, its backup, its sidecar and the sidecar's backup. */

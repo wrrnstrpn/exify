@@ -7,7 +7,7 @@ files:
   - out/**/*
   - package.json
 # ExifTool has to be a real file on disk to run, so it can't live inside the asar.
-# Windows gets the bundled exiftool.exe; macOS and Linux get the Perl version.
+# Windows gets the bundled exiftool.exe; Linux gets the Perl version.
 asarUnpack:
   - node_modules/exiftool-vendored.exe/**
   - node_modules/exiftool-vendored.pl/**
@@ -33,19 +33,6 @@ nsis:
   createDesktopShortcut: true
   artifactName: Exify-Setup-${version}.${ext}
 
-mac:
-  icon: build/icon.png
-  category: public.app-category.photography
-  target:
-    - target: dmg
-      arch: [arm64, x64]
-    - target: zip
-      arch: [arm64, x64]
-  # Notarisation runs when APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID are set.
-  hardenedRuntime: true
-  gatekeeperAssess: false
-dmg:
-  artifactName: Exify-${version}-${arch}.${ext}
 
 linux:
   icon: build/icon.png

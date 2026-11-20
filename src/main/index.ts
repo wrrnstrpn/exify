@@ -25,7 +25,6 @@ registerSchemePrivileges()
 
 let win: BrowserWindow | null = null
 let currentJob = 0
-const isMac = process.platform === 'darwin'
 
 function createWindow(): void {
   win = new BrowserWindow({
@@ -38,8 +37,8 @@ function createWindow(): void {
     icon,
     title: 'Exify',
     titleBarStyle: 'hidden',
-    // macOS keeps its traffic lights; Windows and Linux get overlay buttons drawn over our toolbar.
-    ...(isMac ? { trafficLightPosition: { x: 16, y: 16 } } : { titleBarOverlay: { color: '#00000000', symbolColor: '#c9cbd3', height: 48 } }),
+    // The window buttons are drawn over our own toolbar.
+    titleBarOverlay: { color: '#00000000', symbolColor: '#c9cbd3', height: 48 },
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
@@ -174,16 +173,7 @@ function identifyToTileServers(): void {
   })
 }
 
-// Without an Edit menu, copy and paste don't work in text fields on macOS.
-function setMenu(): void {
-  if (!isMac) {
-    Menu.setApplicationMenu(null)
-    return
-  }
-  Menu.setApplicationMenu(
-    Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }, { role: 'viewMenu' }, { role: 'windowMenu' }])
-  )
-}
+
 
 app.whenReady().then(() => {
   app.setAppUserModelId('app.exify.desktop')
@@ -191,17 +181,12 @@ app.whenReady().then(() => {
   registerProtocolHandler()
   registerIpc()
   identifyToTileServers()
-  setMenu()
+  Menu.setApplicationMenu(null)
   createWindow()
   if (getSettings().autoUpdate) setTimeout(() => void checkForUpdates(), 8000)
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
 })
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
-})
+app.on('window-all-closed', () => app.quit())
 
 let quitting = false
 app.on('before-quit', (e) => {
