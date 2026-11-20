@@ -25,7 +25,8 @@ const MISSING: { key: MissingKey; label: string }[] = [
   { key: 'exposure', label: 'Exposure' },
   { key: 'gps', label: 'Location' },
   { key: 'artist', label: 'Artist' },
-  { key: 'copyright', label: 'Copyright' }
+  { key: 'copyright', label: 'Copyright' },
+  { key: 'film', label: 'Film stock' }
 ]
 
 export function Sidebar({ records }: { records: PhotoRecord[] }): JSX.Element {

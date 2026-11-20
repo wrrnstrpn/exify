@@ -56,7 +56,6 @@ export function Browser({ list }: { list: PhotoRecord[] }): JSX.Element {
   return view === 'list' ? <ListView list={list} /> : <GridView list={list} />
 }
 
-// --------------------------------------------------------------- grid ----
 
 function GridView({ list }: { list: PhotoRecord[] }): JSX.Element {
   const ref = useRef<HTMLDivElement>(null)
@@ -155,7 +154,10 @@ const Card = memo(function Card({ rec, size, style }: { rec: PhotoRecord; size: 
             <IError size={13} />
           </span>
         )}
-        <span className="ext">{rec.ext}</span>
+        <span className="ext">
+          {rec.ext}
+          {rec.sidecar && <b title="Edits live in an XMP sidecar">+xmp</b>}
+        </span>
       </div>
       <div className="card-meta">
         <span className="card-name" title={rec.name}>
@@ -170,7 +172,6 @@ const Card = memo(function Card({ rec, size, style }: { rec: PhotoRecord; size: 
   )
 })
 
-// --------------------------------------------------------------- list ----
 
 interface Col {
   key: SortKey | 'issues'

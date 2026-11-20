@@ -4,8 +4,6 @@ import { exifDateToInput } from '@shared/fields'
 import { ICalendar, ICheck, IChevronLeft, IChevronRight, IStar } from './Icons'
 import { Popover } from './Popover'
 
-// ------------------------------------------------------------------ Toggle --
-
 export function Toggle({ checked, onChange, label, hint }: { checked: boolean; onChange(v: boolean): void; label?: ReactNode; hint?: ReactNode }): JSX.Element {
   return (
     <button type="button" role="switch" aria-checked={checked} className={`toggle ${checked ? 'on' : ''}`} onClick={() => onChange(!checked)}>
@@ -22,8 +20,6 @@ export function Toggle({ checked, onChange, label, hint }: { checked: boolean; o
   )
 }
 
-// ---------------------------------------------------------------- Checkbox --
-
 export function Check({ checked, onChange, children, count }: { checked: boolean; onChange(v: boolean): void; children: ReactNode; count?: number }): JSX.Element {
   return (
     <button type="button" role="checkbox" aria-checked={checked} className={`check ${checked ? 'on' : ''}`} onClick={() => onChange(!checked)}>
@@ -33,8 +29,6 @@ export function Check({ checked, onChange, children, count }: { checked: boolean
     </button>
   )
 }
-
-// ----------------------------------------------------------- Segmented ----
 
 export function Segmented<const T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: ReactNode; title?: string }[]; onChange(v: T): void }): JSX.Element {
   return (
@@ -47,8 +41,6 @@ export function Segmented<const T extends string>({ value, options, onChange }: 
     </div>
   )
 }
-
-// ------------------------------------------------------------------- Stars --
 
 export function Stars({ value, onChange, mixed }: { value: number | null; onChange(v: number): void; mixed?: boolean }): JSX.Element {
   const [hover, setHover] = useState<number | null>(null)
@@ -72,9 +64,7 @@ export function Stars({ value, onChange, mixed }: { value: number | null; onChan
   )
 }
 
-// --------------------------------------------------------------- TextInput --
-
-/** Text field that commits on Enter / blur, so batch writes aren't triggered per keystroke. */
+// Commits on Enter or blur, not per keystroke; with 2,000 photos selected every commit re-validates the lot.
 export function TextField({
   value,
   onCommit,
@@ -142,8 +132,6 @@ export function TextField({
   )
 }
 
-// ---------------------------------------------------------- DateTimeField --
-
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const pad = (n: number, w = 2): string => String(n).padStart(w, '0')
 
@@ -168,10 +156,9 @@ const toExif = (p: Parts): string => `${pad(p.y, 4)}:${pad(p.mo)}:${pad(p.d)} ${
 const toDisplay = (p: Parts, dateOnly: boolean): string =>
   dateOnly ? `${pad(p.y, 4)}-${pad(p.mo)}-${pad(p.d)}` : `${pad(p.y, 4)}-${pad(p.mo)}-${pad(p.d)}  ${pad(p.h)}:${pad(p.mi)}:${pad(p.s)}`
 
-/**
- * Date/time input with a custom calendar popover.
- * Values: EXIF "YYYY:MM:DD HH:MM:SS", or "YYYY-MM-DD" in dateOnly mode.
- */
+// Our own calendar rather than <input type="datetime-local">, which can't show
+// seconds consistently and looks out of place in a dark UI. Takes and emits EXIF
+// "YYYY:MM:DD HH:MM:SS", or "YYYY-MM-DD" in dateOnly mode.
 export function DateTimeField({
   value,
   onCommit,
@@ -329,16 +316,4 @@ export function DateTimeField({
       </Popover>
     </div>
   )
-}
-
-// -------------------------------------------------------------- Number ----
-
-export function NumberField(props: {
-  value: string
-  onCommit(v: string): void
-  placeholder?: string
-  tone?: 'error' | 'warning' | null
-  changed?: boolean
-}): JSX.Element {
-  return <TextField {...props} inputMode="decimal" />
 }

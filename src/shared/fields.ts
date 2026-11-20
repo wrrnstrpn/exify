@@ -1,7 +1,5 @@
-/**
- * Editable metadata fields. Every field the app shows, filters on or writes is
- * declared here, together with how it maps to ExifTool tags in both directions.
- */
+// Every field the app shows, filters on or writes lives in FIELDS below, along
+// with the ExifTool tags it reads from (first non-empty wins) and writes to.
 
 export type FieldValue = string | number | string[] | null
 
@@ -29,7 +27,7 @@ export interface FieldDef {
   max?: number
 }
 
-export type FieldGroup = 'Camera' | 'Lens' | 'Exposure' | 'Date & Time' | 'Description' | 'Location' | 'Image'
+export type FieldGroup = 'Camera' | 'Lens' | 'Exposure' | 'Film' | 'Date & Time' | 'Description' | 'Location' | 'Image'
 
 export const FIELD_KEYS = [
   'Make',
@@ -38,6 +36,8 @@ export const FIELD_KEYS = [
   'Software',
   'LensMake',
   'LensModel',
+  'LensSerialNumber',
+  'LensInfo',
   'FocalLength',
   'FocalLengthIn35mmFormat',
   'FNumber',
@@ -45,6 +45,8 @@ export const FIELD_KEYS = [
   'ISO',
   'ExposureProgram',
   'ExposureCompensation',
+  'FilmStock',
+  'PushPull',
   'DateTimeOriginal',
   'CreateDate',
   'ModifyDate',
@@ -58,6 +60,10 @@ export const FIELD_KEYS = [
   'GPSLatitude',
   'GPSLongitude',
   'GPSAltitude',
+  'Sublocation',
+  'City',
+  'State',
+  'Country',
   'Orientation'
 ] as const
 
@@ -107,6 +113,9 @@ export const FIELDS: FieldDef[] = [
 
   { key: 'LensMake', label: 'Lens make', group: 'Lens', kind: 'text', read: ['LensMake'], write: ['LensMake'] },
   { key: 'LensModel', label: 'Lens model', group: 'Lens', kind: 'text', read: ['LensModel', 'Lens', 'LensID'], write: ['LensModel'] },
+  // LensInfo is kept in ExifTool's readable form ("24-70mm f/2.8"), which it also accepts on write.
+  { key: 'LensInfo', label: 'Lens specs', group: 'Lens', kind: 'text', read: ['LensInfo'], write: ['LensInfo'], placeholder: '24-70mm f/2.8' },
+  { key: 'LensSerialNumber', label: 'Lens serial', group: 'Lens', kind: 'text', read: ['LensSerialNumber'], write: ['LensSerialNumber'] },
   { key: 'FocalLength', label: 'Focal length', group: 'Lens', kind: 'number', read: ['FocalLength'], write: ['FocalLength'], unit: 'mm', step: 1, min: 0 },
   { key: 'FocalLengthIn35mmFormat', label: 'Focal (35mm eq.)', group: 'Lens', kind: 'number', read: ['FocalLengthIn35mmFormat'], write: ['FocalLengthIn35mmFormat'], unit: 'mm', step: 1, min: 0 },
 
@@ -115,6 +124,10 @@ export const FIELDS: FieldDef[] = [
   { key: 'ISO', label: 'ISO', group: 'Exposure', kind: 'number', read: ['ISO'], write: ['ISO'], step: 1, min: 1 },
   { key: 'ExposureProgram', label: 'Exposure mode', group: 'Exposure', kind: 'select', read: ['ExposureProgram'], write: ['ExposureProgram#'], options: EXPOSURE_PROGRAMS },
   { key: 'ExposureCompensation', label: 'Exposure comp.', group: 'Exposure', kind: 'number', read: ['ExposureCompensation'], write: ['ExposureCompensation#'], unit: 'EV', step: 0.3 },
+
+  // There's no standard tag for film, so these go in a small XMP namespace of our own (see main/exiftool-config.ts).
+  { key: 'FilmStock', label: 'Film stock', group: 'Film', kind: 'text', read: ['XMP-exifyfilm:FilmStock'], write: ['XMP-exifyfilm:FilmStock'], placeholder: 'Kodak Portra 400' },
+  { key: 'PushPull', label: 'Push / pull', group: 'Film', kind: 'number', read: ['XMP-exifyfilm:PushPull'], write: ['XMP-exifyfilm:PushPull'], unit: 'stops', step: 1 },
 
   { key: 'DateTimeOriginal', label: 'Date taken', group: 'Date & Time', kind: 'datetime', read: ['DateTimeOriginal'], write: ['DateTimeOriginal'] },
   { key: 'CreateDate', label: 'Date digitized', group: 'Date & Time', kind: 'datetime', read: ['CreateDate'], write: ['CreateDate'] },
@@ -131,6 +144,10 @@ export const FIELDS: FieldDef[] = [
   { key: 'GPSLatitude', label: 'Latitude', group: 'Location', kind: 'number', read: ['GPSLatitude'], write: ['GPSLatitude'], step: 0.000001, min: -90, max: 90, placeholder: '48.858370' },
   { key: 'GPSLongitude', label: 'Longitude', group: 'Location', kind: 'number', read: ['GPSLongitude'], write: ['GPSLongitude'], step: 0.000001, min: -180, max: 180, placeholder: '2.294481' },
   { key: 'GPSAltitude', label: 'Altitude', group: 'Location', kind: 'number', read: ['GPSAltitude'], write: ['GPSAltitude'], unit: 'm', step: 1 },
+  { key: 'Sublocation', label: 'Place', group: 'Location', kind: 'text', read: ['Location', 'Sub-location'], write: ['XMP-iptcCore:Location', 'IPTC:Sub-location'], placeholder: 'Opera House' },
+  { key: 'City', label: 'City', group: 'Location', kind: 'text', read: ['City'], write: ['XMP-photoshop:City', 'IPTC:City'] },
+  { key: 'State', label: 'State / province', group: 'Location', kind: 'text', read: ['State', 'Province-State'], write: ['XMP-photoshop:State', 'IPTC:Province-State'] },
+  { key: 'Country', label: 'Country', group: 'Location', kind: 'text', read: ['Country', 'Country-PrimaryLocationName'], write: ['XMP-photoshop:Country', 'IPTC:Country-PrimaryLocationName'] },
 
   { key: 'Orientation', label: 'Orientation', group: 'Image', kind: 'select', read: ['Orientation'], write: ['Orientation#'], options: ORIENTATIONS }
 ]
@@ -140,7 +157,7 @@ export const FIELD_BY_KEY: Record<FieldKey, FieldDef> = Object.fromEntries(FIELD
   FieldDef
 >
 
-export const FIELD_GROUPS: FieldGroup[] = ['Camera', 'Lens', 'Exposure', 'Date & Time', 'Description', 'Location', 'Image']
+export const FIELD_GROUPS: FieldGroup[] = ['Camera', 'Lens', 'Exposure', 'Film', 'Date & Time', 'Description', 'Location', 'Image']
 
 export const DATE_FIELDS: FieldKey[] = ['DateTimeOriginal', 'CreateDate', 'ModifyDate']
 
@@ -153,6 +170,7 @@ export const NUMERIC_READ_TAGS = new Set([
   'ISO',
   'ExposureProgram',
   'ExposureCompensation',
+  'PushPull',
   'Rating',
   'GPSLatitude',
   'GPSLongitude',

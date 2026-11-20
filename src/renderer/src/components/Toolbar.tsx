@@ -2,23 +2,28 @@ import type { JSX } from 'react'
 import { useRef, useState } from 'react'
 import { FIELDS } from '@shared/fields'
 import mark from '../assets/mark.svg'
-import { useStore } from '../store'
-import { api } from '../store'
+import { api, useStore } from '../store'
 import { Segmented } from './Controls'
 import {
+  IArchive,
   ICalendar,
+  ICompare,
   IChevronDown,
   IDownload,
   IFolder,
   IGrid,
   IList,
+  IMap,
   IMore,
   IPin,
   IRefresh,
+  IRename,
+  IRoute,
   ISearch,
   ISettings,
   ITrash,
   IUndo,
+  IUpload,
   IX
 } from './Icons'
 import { Popover } from './Popover'
@@ -155,11 +160,21 @@ export function Toolbar({ visible }: { visible: PhotoRecord[] }): JSX.Element {
         <button className="icon-btn" onClick={() => setMoreOpen((o) => !o)} onBlur={() => setMoreOpen(false)} title="Batch tools">
           <IMore size={16} />
         </button>
-        <Popover anchor={moreRef} open={moreOpen} minWidth={270} align="end">
+        <Popover anchor={moreRef} open={moreOpen} minWidth={280} maxHeight={560} align="end">
           <div className="menu" onClick={() => setMoreOpen(false)}>
             <div className="combo-group">Selected photos ({selectedCount})</div>
+            <button className="menu-item" disabled={!selectedCount} onClick={() => openModal({ kind: 'rename' })}>
+              <IRename size={14} /> <span className="menu-label">Rename files…</span>
+              <span className="menu-hint">F2</span>
+            </button>
             <button className="menu-item" disabled={!selectedCount} onClick={() => openModal({ kind: 'dates' })}>
-              <ICalendar size={14} /> <span className="menu-label">Shift / sequence dates…</span>
+              <ICalendar size={14} /> <span className="menu-label">Shift, sequence or zone dates…</span>
+            </button>
+            <button className="menu-item" disabled={!selectedCount} onClick={() => openModal({ kind: 'geotag' })}>
+              <IRoute size={14} /> <span className="menu-label">Geotag from GPX track…</span>
+            </button>
+            <button className="menu-item" disabled={selectedCount < 2} onClick={() => openModal({ kind: 'compare' })}>
+              <ICompare size={14} /> <span className="menu-label">Compare</span>
             </button>
             <button className="menu-item" disabled={!selectedCount} onClick={() => setDraft({ GPSLatitude: null, GPSLongitude: null, GPSAltitude: null })}>
               <IPin size={14} /> <span className="menu-label">Remove location</span>
@@ -167,9 +182,18 @@ export function Toolbar({ visible }: { visible: PhotoRecord[] }): JSX.Element {
             <button className="menu-item danger" disabled={!selectedCount} onClick={() => openModal({ kind: 'strip' })}>
               <ITrash size={14} /> <span className="menu-label">Strip all metadata…</span>
             </button>
-            <div className="combo-group">Library</div>
+            <div className="combo-group">{selectedCount ? 'Selected, or everything shown' : 'Everything shown'}</div>
+            <button className="menu-item" disabled={!visible.length} onClick={() => openModal({ kind: 'import' })}>
+              <IUpload size={14} /> <span className="menu-label">Import CSV or shooting log…</span>
+            </button>
             <button className="menu-item" disabled={!visible.length} onClick={() => void exportCsv()}>
               <IDownload size={14} /> <span className="menu-label">Export visible as CSV</span>
+            </button>
+            <button className="menu-item" disabled={!visible.length} onClick={() => openModal({ kind: 'map' })}>
+              <IMap size={14} /> <span className="menu-label">Map</span>
+            </button>
+            <button className="menu-item" disabled={!visible.length} onClick={() => openModal({ kind: 'backups' })}>
+              <IArchive size={14} /> <span className="menu-label">Backups…</span>
             </button>
           </div>
         </Popover>

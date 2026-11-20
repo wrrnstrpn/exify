@@ -6,16 +6,61 @@ directories:
 files:
   - out/**/*
   - package.json
+# ExifTool has to be a real file on disk to run, so it can't live inside the asar.
+# Windows gets the bundled exiftool.exe; macOS and Linux get the Perl version.
 asarUnpack:
   - node_modules/exiftool-vendored.exe/**
+  - node_modules/exiftool-vendored.pl/**
+
+# The updater reads latest*.yml from the GitHub release.
+publish:
+  provider: github
+  owner: wrrnstrpn
+  repo: exify
+
 win:
   icon: build/icon.png
   target:
     - target: nsis
       arch: [x64]
+  # Signing kicks in when CSC_LINK / CSC_KEY_PASSWORD are set (see README).
+  # Without them the installer is built unsigned, as before. Don't set
+  # publisherName until releases are signed: the updater would then reject
+  # every unsigned update.
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
-  artifactName: Exify-Setup-${version}.exe
+  artifactName: Exify-Setup-${version}.${ext}
+
+mac:
+  icon: build/icon.png
+  category: public.app-category.photography
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
+  # Notarisation runs when APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID are set.
+  hardenedRuntime: true
+  gatekeeperAssess: false
+dmg:
+  artifactName: Exify-${version}-${arch}.${ext}
+
+linux:
+  icon: build/icon.png
+  category: Graphics;Photography
+  synopsis: Batch EXIF editor for folders of photos
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+appImage:
+  artifactName: Exify-${version}-x86_64.${ext}
+deb:
+  # ExifTool's Perl build needs perl, which most distros ship but minimal ones may not.
+  depends: [perl]
+  artifactName: exify_${version}_amd64.${ext}
+
 fileAssociations: []

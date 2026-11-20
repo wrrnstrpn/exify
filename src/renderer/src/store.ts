@@ -7,7 +7,9 @@ import {
   type PhotoRecord,
   type Preset,
   type ProgressEvent,
+  type RenameMove,
   type Settings,
+  type UpdateStatus,
   type WriteResult
 } from '@shared/types'
 import { findCamera } from './data/cameras'
@@ -21,16 +23,23 @@ export interface Toast {
   kind: 'info' | 'success' | 'error'
   text: string
   detail?: WriteResult[]
+  action?: { label: string; run(): void }
 }
 
 export type ModalState =
-  | { kind: 'dates' }
+  | { kind: 'dates'; mode?: 'shift' | 'sequence' | 'zone' }
   | { kind: 'sync' }
   | { kind: 'settings' }
   | { kind: 'savePreset' }
   | { kind: 'strip' }
   | { kind: 'errors'; results: WriteResult[] }
   | { kind: 'lightbox'; path: string }
+  | { kind: 'rename' }
+  | { kind: 'import' }
+  | { kind: 'geotag' }
+  | { kind: 'map'; pick?: boolean }
+  | { kind: 'compare' }
+  | { kind: 'backups' }
 
 export interface KeywordOps {
   add: string[]
@@ -59,6 +68,7 @@ interface State {
   toasts: Toast[]
   modal: ModalState | null
   visible: string[]
+  update: UpdateStatus
 
   init(): Promise<void>
   openFolder(path?: string): Promise<void>
@@ -80,9 +90,13 @@ interface State {
   writeEdits(edits: FileEdit[], label: string): Promise<WriteResult[]>
   undo(): Promise<void>
   strip(paths: string[]): Promise<void>
+  rename(moves: RenameMove[], label: string): Promise<WriteResult[]>
+  restoreBackups(paths: string[]): Promise<void>
+  refreshRecords(paths: string[]): Promise<void>
+  setUpdate(u: UpdateStatus): void
   updateSettings(patch: Partial<Settings>): Promise<void>
   savePresets(presets: Preset[]): Promise<void>
-  toast(kind: Toast['kind'], text: string, detail?: WriteResult[]): void
+  toast(kind: Toast['kind'], text: string, detail?: WriteResult[], action?: Toast['action']): void
   dismissToast(id: number): void
   openModal(m: ModalState | null): void
 }
@@ -133,6 +147,7 @@ export const useStore = create<State>((set, get) => ({
   toasts: [],
   modal: null,
   visible: [],
+  update: { state: 'idle' },
 
   async init() {
     const [settings, presets, history] = await Promise.all([api.getSettings(), api.getPresets(), api.historyInfo()])
@@ -251,7 +266,7 @@ export const useStore = create<State>((set, get) => ({
       if (Object.keys(e).length) edits.push({ path: rec.path, set: e })
     }
     if (!edits.length) {
-      get().toast('info', 'Nothing to change — selected photos already have these values')
+      get().toast('info', 'The selected photos already have these values')
       get().discardDraft()
       return
     }
@@ -269,7 +284,7 @@ export const useStore = create<State>((set, get) => ({
     set({ busy: true })
     try {
       const results = await api.write(edits, label)
-      applyResults(set, get, results)
+      applyResults(set, results)
       const ok = results.filter((r) => r.ok).length
       const failed = results.length - ok
       if (failed) get().toast('error', `${failed} of ${results.length} files could not be written`, results.filter((r) => !r.ok))
@@ -287,7 +302,7 @@ export const useStore = create<State>((set, get) => ({
     set({ busy: true })
     try {
       const results = await api.undo()
-      applyResults(set, get, results)
+      applyResults(set, results)
       get().toast('success', `Undid: ${h.label}`)
       set({ history: await api.historyInfo() })
     } finally {
@@ -299,13 +314,58 @@ export const useStore = create<State>((set, get) => ({
     set({ busy: true })
     try {
       const results = await api.stripMetadata(paths)
-      applyResults(set, get, results)
+      applyResults(set, results)
       const failed = results.filter((r) => !r.ok)
       if (failed.length) get().toast('error', `${failed.length} files could not be stripped`, failed)
       else get().toast('success', `Stripped metadata from ${results.length} photo${results.length > 1 ? 's' : ''}`)
       set({ history: await api.historyInfo() })
     } finally {
       set({ busy: false })
+    }
+  },
+
+  async rename(moves, label) {
+    set({ busy: true })
+    try {
+      const results = await api.rename(moves, label)
+      applyResults(set, results)
+      const failed = results.filter((r) => !r.ok)
+      if (failed.length) get().toast('error', `${failed.length} of ${results.length} files couldn't be renamed`, failed)
+      else get().toast('success', `Renamed ${results.length} file${results.length > 1 ? 's' : ''}`)
+      set({ history: await api.historyInfo() })
+      return results
+    } finally {
+      set({ busy: false })
+    }
+  },
+
+  async restoreBackups(paths) {
+    set({ busy: true })
+    try {
+      const results = await api.restoreBackups(paths)
+      applyResults(set, results)
+      const failed = results.filter((r) => !r.ok)
+      if (failed.length) get().toast('error', `${failed.length} backups couldn't be restored`, failed)
+      else get().toast('success', `Restored ${results.length} original${results.length > 1 ? 's' : ''}`)
+      set({ history: await api.historyInfo() })
+    } finally {
+      set({ busy: false })
+    }
+  },
+
+  async refreshRecords(paths) {
+    const recs = await api.readRecords(paths)
+    applyResults(
+      set,
+      recs.map((record) => ({ path: record.path, ok: true, record }))
+    )
+  },
+
+  setUpdate(update) {
+    const was = get().update.state
+    set({ update })
+    if (update.state === 'ready' && was !== 'ready') {
+      get().toast('info', `Exify ${update.version} is ready to install`, undefined, { label: 'Restart', run: () => void api.installUpdate() })
     }
   },
 
@@ -319,10 +379,10 @@ export const useStore = create<State>((set, get) => ({
     set({ presets })
   },
 
-  toast(kind, text, detail) {
+  toast(kind, text, detail, action) {
     const id = ++toastId
-    set((s) => ({ toasts: [...s.toasts.slice(-3), { id, kind, text, detail }] }))
-    if (kind !== 'error') setTimeout(() => get().dismissToast(id), 3800)
+    set((s) => ({ toasts: [...s.toasts.slice(-3), { id, kind, text, detail, action }] }))
+    if (kind !== 'error' && !action) setTimeout(() => get().dismissToast(id), 3800)
   },
 
   dismissToast(id) {
@@ -336,18 +396,35 @@ export const useStore = create<State>((set, get) => ({
 
 type SetFn = (fn: (s: State) => Partial<State>) => void
 
-function applyResults(set: SetFn, _get: () => State, results: WriteResult[]): void {
+/** Fold write results back into the store. A result with `from` is a file that moved. */
+function applyResults(set: SetFn, results: WriteResult[]): void {
   set((s) => {
     const records = s.records.slice()
     const versions = { ...s.versions }
+    let moved = false
+    const remap = new Map<string, string>()
     for (const r of results) {
       if (!r.record) continue
-      const i = s.index.get(r.path)
+      const i = s.index.get(r.from ?? r.path)
       if (i === undefined) continue
       records[i] = r.record
+      if (r.from && r.from !== r.path) {
+        moved = true
+        remap.set(r.from, r.path)
+        delete versions[r.from]
+      }
       versions[r.path] = (versions[r.path] ?? 0) + 1
     }
-    return { records, versions }
+    if (!moved) return { records, versions }
+    const re = (p: string | null): string | null => (p === null ? null : (remap.get(p) ?? p))
+    return {
+      records,
+      versions,
+      index: indexOf(records),
+      selected: new Set([...s.selected].map((p) => re(p)!)),
+      focus: re(s.focus),
+      anchor: re(s.anchor)
+    }
   })
 }
 

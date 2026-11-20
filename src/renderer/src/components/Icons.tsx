@@ -82,21 +82,6 @@ export const IError = (p: P): JSX.Element => (
 export const IStar = ({ filled, ...p }: P & { filled?: boolean }): JSX.Element => (
   <Svg {...p} fill={filled ? 'currentColor' : 'none'}><path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8z" /></Svg>
 )
-export const ICamera = (p: P): JSX.Element => (
-  <Svg {...p}><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.5-2h5L16 7h2.5A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z" /><circle cx="12" cy="13" r="3.3" /></Svg>
-)
-export const IAperture = (p: P): JSX.Element => (
-  <Svg {...p}><circle cx="12" cy="12" r="8.5" /><path d="M14.3 3.8 9 13M19.5 8.6H9.3M18.7 16 13.8 7.3M9.7 20.2 15 11M4.5 15.4h10.2M5.3 8l4.9 8.7" /></Svg>
-)
-export const ITag = (p: P): JSX.Element => (
-  <Svg {...p}><path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3a1.5 1.5 0 0 1 0 2.1l-6.1 6.1a1.5 1.5 0 0 1-2.1 0z" /><circle cx="8" cy="8" r="1.4" /></Svg>
-)
-export const ICopy = (p: P): JSX.Element => (
-  <Svg {...p}><rect x="8.5" y="8.5" width="11" height="11" rx="2" /><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5" /></Svg>
-)
-export const IWand = (p: P): JSX.Element => (
-  <Svg {...p}><path d="m4 20 11-11M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1zM19 11l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" /></Svg>
-)
 export const ILayers = (p: P): JSX.Element => (
   <Svg {...p}><path d="m12 4 8.5 4.5L12 13 3.5 8.5z" /><path d="m3.5 12.5 8.5 4.5 8.5-4.5M3.5 16.5 12 21l8.5-4.5" /></Svg>
 )
@@ -123,4 +108,22 @@ export const IBolt = (p: P): JSX.Element => (
 )
 export const ISync = (p: P): JSX.Element => (
   <Svg {...p}><path d="M5 9h11.5l-3-3M19 15H7.5l3 3" /></Svg>
+)
+export const IRename = (p: P): JSX.Element => (
+  <Svg {...p}><path d="M4 7h9M4 12h6M4 17h5" /><path d="m14.5 18.5 1-3.5 4.5-4.5 2.5 2.5-4.5 4.5z" /></Svg>
+)
+export const IUpload = (p: P): JSX.Element => (
+  <Svg {...p}><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15" /></Svg>
+)
+export const IMap = (p: P): JSX.Element => (
+  <Svg {...p}><path d="m9 5-5 2v12l5-2 6 2 5-2V5l-5 2z" /><path d="M9 5v12M15 7v12" /></Svg>
+)
+export const IRoute = (p: P): JSX.Element => (
+  <Svg {...p}><circle cx="6" cy="18" r="2" /><circle cx="18" cy="6" r="2" /><path d="M8 18h7.5a3.5 3.5 0 0 0 0-7h-7a3.5 3.5 0 0 1 0-7H16" /></Svg>
+)
+export const ICompare = (p: P): JSX.Element => (
+  <Svg {...p}><rect x="3.5" y="5" width="7" height="14" rx="1.5" /><rect x="13.5" y="5" width="7" height="14" rx="1.5" /></Svg>
+)
+export const IArchive = (p: P): JSX.Element => (
+  <Svg {...p}><rect x="3.5" y="4.5" width="17" height="4" rx="1" /><path d="M5 8.5V18a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 18V8.5M10 12.5h4" /></Svg>
 )

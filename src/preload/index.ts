@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
-import type { ExifyApi, PhotoRecord, ProgressEvent } from '@shared/types'
+import type { ExifyApi, PhotoRecord, ProgressEvent, UpdateStatus } from '@shared/types'
 
 const enc = encodeURIComponent
 
@@ -29,6 +29,21 @@ const api: ExifyApi = {
   savePresets: (presets) => ipcRenderer.invoke('savePresets', presets),
   showInFolder: (path) => ipcRenderer.invoke('showInFolder', path),
   saveTextFile: (name, content) => ipcRenderer.invoke('saveTextFile', name, content),
+  openTextFiles: (kind, multiple) => ipcRenderer.invoke('openTextFiles', kind, multiple),
+  rename: (moves, label) => ipcRenderer.invoke('rename', moves, label),
+  existingPaths: (paths) => ipcRenderer.invoke('existingPaths', paths),
+  listBackups: (paths) => ipcRenderer.invoke('listBackups', paths),
+  restoreBackups: (paths) => ipcRenderer.invoke('restoreBackups', paths),
+  deleteBackups: (paths) => ipcRenderer.invoke('deleteBackups', paths),
+  platform: process.platform,
+  appVersion: () => ipcRenderer.invoke('appVersion'),
+  checkForUpdates: () => ipcRenderer.invoke('checkForUpdates'),
+  installUpdate: () => ipcRenderer.invoke('installUpdate'),
+  onUpdateStatus: (cb) => {
+    const h = (_e: unknown, s: UpdateStatus): void => cb(s)
+    ipcRenderer.on('updateStatus', h)
+    return () => ipcRenderer.removeListener('updateStatus', h)
+  },
   thumbUrl: (path, size, version = 0) => `exify://thumb/?p=${enc(path)}&s=${size}&v=${version}`,
   previewUrl: (path, version = 0) => `exify://preview/?p=${enc(path)}&v=${version}`,
   pathForFile: (file) => webUtils.getPathForFile(file)

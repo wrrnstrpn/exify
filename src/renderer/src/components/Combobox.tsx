@@ -36,10 +36,9 @@ function matches(o: Option, tokens: string[]): boolean {
   return tokens.every((t) => hay.includes(t))
 }
 
-/**
- * The one dropdown used everywhere in Exify: a searchable, keyboard-driven
- * list with group headers, hints and per-option mismatch warnings.
- */
+// Every dropdown in the app is one of these: type to filter, arrows and Enter to
+// pick, group headers, hints on the right, and a warning marker on options that
+// don't fit (a lens that won't mount, an aperture the lens can't do).
 export function Combobox({
   value,
   options,
@@ -223,7 +222,7 @@ export function Combobox({
           })}
           {filtered.length > shown.length && (
             <div className="combo-more">
-              Showing {shown.length} of {filtered.length} — keep typing to narrow down
+              Showing {shown.length} of {filtered.length}. Keep typing to narrow it down
             </div>
           )}
         </div>

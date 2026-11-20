@@ -9,7 +9,6 @@ import {
   parseExposure,
   valuesEqual,
   type FieldDef,
-  type FieldGroup,
   type FieldKey,
   type FieldMap,
   type FieldValue
@@ -24,34 +23,26 @@ import {
   isoOptions,
   lensMakeOptions,
   lensOptions,
+  filmOptions,
+  lensInfoFor,
   makeOptions,
   modelOptions,
+  PUSH_OPTIONS,
   shutterOptions,
   textOptions,
+  TZ_OPTIONS,
   type Context,
   type Option
 } from '../lib/options'
-import { validate, type Issue } from '../lib/validate'
+import { offsetFromGps } from '../lib/tz'
+import { validate } from '../lib/validate'
 import { api, buildEdit, selectedRecords, useStore } from '../store'
 import { Combobox, Select } from './Combobox'
 import { DateTimeField, Stars, TextField, Toggle } from './Controls'
 import { AllTags } from './AllTags'
-import {
-  ICalendar,
-  IChevronDown,
-  IError,
-  IExternal,
-  IFolder,
-  IImage,
-  IPin,
-  IRevert,
-  ISync,
-  IWarn,
-  IX,
-  ILayers,
-  IBolt
-} from './Icons'
+import { IBolt, ICalendar, IChevronDown, IClock, IError, IExternal, IFolder, IImage, ILayers, IMap, IPin, IRevert, ISync, IWarn, IX } from './Icons'
 import { KeywordsField } from './KeywordsField'
+import { revealLabel } from './Shell'
 
 interface Common {
   value: FieldValue | undefined
@@ -78,15 +69,6 @@ function commonValue(recs: PhotoRecord[], key: FieldKey): Common {
 const str = (v: FieldValue | undefined): string =>
   v === undefined || v === null ? '' : Array.isArray(v) ? v.join(', ') : String(v)
 
-const TZ_OPTIONS: Option[] = Array.from({ length: 27 * 4 }, (_, i) => -12 * 60 + i * 15)
-  .filter((m) => m <= 14 * 60 && (m % 60 === 0 || [-570, -210, 210, 270, 330, 345, 390, 525, 570, 630, 765, 825].includes(m)))
-  .map((m) => {
-    const sign = m < 0 ? '-' : '+'
-    const a = Math.abs(m)
-    const v = `${sign}${String(Math.floor(a / 60)).padStart(2, '0')}:${String(a % 60).padStart(2, '0')}`
-    return { value: v, label: `UTC${v}` }
-  })
-
 const EV_OPTIONS: Option[] = Array.from({ length: 31 }, (_, i) => Math.round((-5 + i / 3) * 10) / 10)
   .filter((v) => Math.abs(v) <= 3)
   .map((v) => ({ value: String(v), label: `${v > 0 ? '+' : ''}${v} EV` }))
@@ -94,16 +76,6 @@ const EV_OPTIONS: Option[] = Array.from({ length: 31 }, (_, i) => Math.round((-5
 const parseNum = (s: string): number | null => {
   const n = parseFloat(s.replace(/^(ƒ|f)\s*\/?\s*/i, '').replace(/^iso\s*/i, '').replace(/mm$/i, '').replace(',', '.'))
   return isFinite(n) ? n : null
-}
-
-const GROUP_ICON: Record<FieldGroup, ReactNode> = {
-  Camera: null,
-  Lens: null,
-  Exposure: null,
-  'Date & Time': null,
-  Description: null,
-  Location: null,
-  Image: null
 }
 
 function loadCollapsed(): Record<string, boolean> {
@@ -166,7 +138,7 @@ function EditorHeader({ sel }: { sel: PhotoRecord[] }): JSX.Element {
         <div className="editor-title">
           <strong title={r.name}>{r.name}</strong>
           <span>
-            {[r.fileType, r.width && r.height ? `${r.width}×${r.height}` : null, r.fileSize ? fmtSize(r.fileSize) : null, r.rel || null]
+            {[r.fileType, r.width && r.height ? `${r.width}×${r.height}` : null, r.fileSize ? fmtSize(r.fileSize) : null, r.sidecar ? 'XMP sidecar' : null, r.rel || null]
               .filter(Boolean)
               .join(' · ')}
           </span>
@@ -176,7 +148,7 @@ function EditorHeader({ sel }: { sel: PhotoRecord[] }): JSX.Element {
           <button className="icon-btn" title="View larger" onClick={() => openModal({ kind: 'lightbox', path: r.path })}>
             <IImage size={15} />
           </button>
-          <button className="icon-btn" title="Show in Explorer" onClick={() => api.showInFolder(r.path)}>
+          <button className="icon-btn" title={revealLabel} onClick={() => api.showInFolder(r.path)}>
             <IFolder size={15} />
           </button>
         </div>
@@ -250,7 +222,7 @@ function MetaForm({ sel }: { sel: PhotoRecord[] }): JSX.Element {
     focal: effNum('FocalLength')
   }
 
-  // Validate every selected photo as it would look after applying the draft.
+  // Check each selected photo as it would be after applying the draft, not as it is now.
   const issuesByField = useMemo(() => {
     const out = new Map<FieldKey, { level: 'error' | 'warning'; messages: Map<string, number> }>()
     const sample = sel.length > 1500 ? sel.slice(0, 1500) : sel
@@ -275,7 +247,6 @@ function MetaForm({ sel }: { sel: PhotoRecord[] }): JSX.Element {
 
   const crop = cropFor(ctx)
 
-  // ------------------------------------------------------------ actions --
   const set = (patch: FieldMap): void => setDraft(patch)
 
   const onModel = (v: string, opt?: Option): void => {
@@ -289,6 +260,8 @@ function MetaForm({ sel }: { sel: PhotoRecord[] }): JSX.Element {
     const patch: FieldMap = { LensModel: v || null }
     const lens = (opt?.data as LensModel | undefined) ?? findLens(v)
     if (lens?.make && !sameMake(lens.make, effStr('LensMake'))) patch.LensMake = lens.make
+    const info = lensInfoFor(v)
+    if (info) patch.LensInfo = info
     const spec = parseLensSpecs(v)
     if (isPrime(spec) && spec.minFocal !== undefined) {
       patch.FocalLength = spec.minFocal
@@ -317,7 +290,7 @@ function MetaForm({ sel }: { sel: PhotoRecord[] }): JSX.Element {
   const onShutter = (v: string): void => {
     if (!v) return set({ ExposureTime: null })
     const s = parseExposure(v)
-    if (s === null) return toast('error', `“${v}” isn't a shutter speed — try 1/125, 0.5 or 30`)
+    if (s === null) return toast('error', `“${v}” isn't a shutter speed. Try 1/125, 0.5 or 30`)
     set({ ExposureTime: s < 0.3 ? formatExposure(s) : String(Math.round(s * 10) / 10) })
   }
 
@@ -333,6 +306,17 @@ function MetaForm({ sel }: { sel: PhotoRecord[] }): JSX.Element {
     return true
   }
 
+  const lat = effNum('GPSLatitude')
+  const lon = effNum('GPSLongitude')
+
+  const zoneFromGps = (): void => {
+    // Each photo can be somewhere else, so batches go through the date tools, which work per photo.
+    if (sel.length > 1) return openModal({ kind: 'dates', mode: 'zone' })
+    if (lat === undefined || lon === undefined) return
+    const tz = offsetFromGps(lat, lon, effStr('DateTimeOriginal'))
+    if (tz) set({ OffsetTimeOriginal: tz })
+  }
+
   const applyPreset = (id: string): void => {
     if (id === '__save') return openModal({ kind: 'savePreset' })
     if (id.startsWith('__del:')) {
@@ -342,10 +326,9 @@ function MetaForm({ sel }: { sel: PhotoRecord[] }): JSX.Element {
     const p = presets.find((x) => x.id === id)
     if (!p) return
     set(p.fields)
-    toast('info', `Preset “${p.name}” loaded — review and apply`)
+    toast('info', `Loaded preset “${p.name}”. Check it, then Apply`)
   }
 
-  // ------------------------------------------------------------- render --
   const fieldProps = (k: FieldKey): { tone: 'error' | 'warning' | null; changed: boolean } => ({
     tone: issuesByField.get(k)?.level ?? null,
     changed: k in draft
@@ -406,6 +389,38 @@ function MetaForm({ sel }: { sel: PhotoRecord[] }): JSX.Element {
         return <Combobox {...p} value={effStr(k)} placeholder={ph || '+00:00'} options={TZ_OPTIONS} onCommit={(v) => set({ OffsetTimeOriginal: v || null })} />
       case 'ImageDescription':
         return <TextField {...p} multiline value={effStr(k)} placeholder={ph} onCommit={(v) => set({ [k]: v || null })} />
+      case 'LensInfo': {
+        const suggested = lensInfoFor(ctx.lens)
+        return (
+          <div className="row-inline">
+            <TextField {...p} value={effStr(k)} placeholder={ph || def.placeholder} onCommit={(v) => set({ LensInfo: v || null })} />
+            {suggested && suggested !== effStr(k) && (
+              <button className="btn ghost sm" title="Fill in from the lens model" onClick={() => set({ LensInfo: suggested })}>
+                <IBolt size={13} /> {suggested}
+              </button>
+            )}
+          </div>
+        )
+      }
+      case 'FilmStock':
+        return <Combobox {...p} value={effStr(k)} placeholder={ph || def.placeholder} options={() => filmOptions(allRecords)} onCommit={(v) => set({ FilmStock: v || null })} popoverWidth={320} />
+      case 'PushPull':
+        return (
+          <Combobox
+            {...p}
+            value={effStr(k)}
+            placeholder={ph || 'Box speed'}
+            options={PUSH_OPTIONS}
+            onCommit={onNumber(k, 'push/pull')}
+            inputMode="numeric"
+            display={(v) => (v === '0' ? 'Box speed' : `${Number(v) > 0 ? '+' : ''}${v} stops`)}
+          />
+        )
+      case 'Sublocation':
+      case 'City':
+      case 'State':
+      case 'Country':
+        return <Combobox {...p} value={effStr(k)} placeholder={ph || def.placeholder} options={() => textOptions(allRecords, k)} onCommit={(v) => set({ [k]: v || null })} />
       case 'Artist':
       case 'Copyright':
         return <Combobox {...p} value={effStr(k)} placeholder={ph || (k === 'Copyright' ? `© ${new Date().getFullYear()} Your Name` : 'Your name')} options={() => textOptions(allRecords, k)} onCommit={(v) => set({ [k]: v || null })} />
@@ -426,9 +441,6 @@ function MetaForm({ sel }: { sel: PhotoRecord[] }): JSX.Element {
         return <TextField {...p} value={effStr(k)} placeholder={ph} onCommit={(v) => set({ [k]: def.kind === 'number' ? parseNum(v) : v || null })} />
     }
   }
-
-  const lat = effNum('GPSLatitude')
-  const lon = effNum('GPSLongitude')
 
   return (
     <>
@@ -462,13 +474,13 @@ function MetaForm({ sel }: { sel: PhotoRecord[] }): JSX.Element {
           const groupIssues = defs.map((d) => issuesByField.get(d.key)).filter(Boolean)
           const gLevel = groupIssues.some((i) => i!.level === 'error') ? 'error' : groupIssues.length ? 'warning' : null
           const gChanged = defs.some((d) => d.key in draft) || (g === 'Description' && (keywordOps.add.length > 0 || keywordOps.remove.length > 0))
-          const isCollapsed = collapsed[g]
+          // Film starts folded away; most folders won't need it.
+          const isCollapsed = collapsed[g] ?? g === 'Film'
           return (
             <section key={g} className={`group ${isCollapsed ? 'collapsed' : ''}`}>
               <button className="group-head" onClick={() => setCollapsed((c) => ({ ...c, [g]: !c[g] }))}>
                 <IChevronDown size={14} className="group-caret" />
                 <span>{g}</span>
-                {GROUP_ICON[g]}
                 {gChanged && <span className="dot changed" title="Has pending changes" />}
                 {gLevel && <span className={`group-flag ${gLevel}`}>{gLevel === 'error' ? <IError size={13} /> : <IWarn size={13} />}</span>}
               </button>
@@ -487,6 +499,7 @@ function MetaForm({ sel }: { sel: PhotoRecord[] }): JSX.Element {
                       />
                     </div>
                   )}
+                  {g === 'Film' && <p className="group-hint muted small">Stored in XMP. Other apps keep it, but most won't show it.</p>}
                   {defs.map((def) => (
                     <FieldRow
                       key={def.key}
@@ -502,17 +515,27 @@ function MetaForm({ sel }: { sel: PhotoRecord[] }): JSX.Element {
                       {renderInput(def)}
                     </FieldRow>
                   ))}
+                  {g === 'Date & Time' && (lat !== undefined || sel.length > 1) && (
+                    <div className="group-actions">
+                      <button className="btn ghost sm" onClick={zoneFromGps} title="Look up the UTC offset at this photo's location on the day it was taken">
+                        <IClock size={13} /> Time zone from location
+                      </button>
+                    </div>
+                  )}
                   {g === 'Location' && (
                     <div className="group-actions">
+                      <button className="btn ghost sm" onClick={() => openModal({ kind: 'map', pick: true })}>
+                        <IMap size={13} /> Pick on map
+                      </button>
                       {lat !== undefined && lon !== undefined && (
                         <button className="btn ghost sm" onClick={() => window.open(`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=15/${lat}/${lon}`)}>
-                          <IExternal size={13} /> Open map
+                          <IExternal size={13} /> OpenStreetMap
                         </button>
                       )}
                       <button className="btn ghost sm" onClick={() => set({ GPSLatitude: null, GPSLongitude: null, GPSAltitude: null })}>
-                        <IPin size={13} /> Remove location
+                        <IPin size={13} /> Remove
                       </button>
-                      <span className="muted small">Tip: paste “48.8584, 2.2945” into latitude</span>
+                      <span className="muted small">You can also paste “48.8584, 2.2945” into latitude.</span>
                     </div>
                   )}
                   {g === 'Description' && (
@@ -625,5 +648,3 @@ function FieldRow({
     </div>
   )
 }
-
-export type { Issue }

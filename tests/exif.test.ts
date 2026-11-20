@@ -16,7 +16,7 @@ import {
 } from '../src/main/exif'
 import { scanFolder } from '../src/main/scan'
 
-/** End-to-end tests against the real ExifTool binary, on copies of the fixtures. */
+// End-to-end tests against the real ExifTool binary, on copies of the fixtures.
 
 let dir: string
 let jpg: string
@@ -27,6 +27,8 @@ const SAMPLE: FieldMap = {
   Model: 'Canon EOS R6 Mark II',
   LensMake: 'Canon',
   LensModel: 'RF24-70mm F2.8 L IS USM',
+  LensInfo: '24-70mm f/2.8',
+  LensSerialNumber: '0000123',
   FocalLength: 35,
   FocalLengthIn35mmFormat: 35,
   FNumber: 2.8,
@@ -34,6 +36,8 @@ const SAMPLE: FieldMap = {
   ISO: 400,
   ExposureProgram: 3,
   ExposureCompensation: -0.7,
+  FilmStock: 'Kodak Portra 400',
+  PushPull: 1,
   DateTimeOriginal: '2024:06:15 18:30:05',
   CreateDate: '2024:06:15 18:30:05',
   OffsetTimeOriginal: '+02:00',
@@ -46,6 +50,10 @@ const SAMPLE: FieldMap = {
   GPSLatitude: -33.856784,
   GPSLongitude: 151.215297,
   GPSAltitude: 12.5,
+  Sublocation: 'Opera House',
+  City: 'Zürich',
+  State: 'NSW',
+  Country: 'Australia',
   Orientation: 1,
   SerialNumber: '123456',
   Software: 'Exify'

@@ -9,7 +9,8 @@ following third-party software, each under its own licence.
 - Licence: the same terms as Perl itself (the Artistic License or the GNU General
   Public License, at your option).
 - Use: Exify runs ExifTool as a separate program to read and write all metadata.
-  It is distributed unmodified, including the bundled Perl runtime for Windows.
+  It is distributed unmodified, including the bundled Perl runtime for Windows. On
+  macOS and Linux it runs on the system's Perl.
 
 ## exiftool-vendored
 
@@ -26,6 +27,15 @@ following third-party software, each under its own licence.
 
 - React and React DOM — MIT — <https://react.dev>
 - Zustand — MIT — <https://github.com/pmndrs/zustand>
+- Leaflet — BSD-2-Clause — <https://leafletjs.com>
+- electron-updater — MIT — <https://github.com/electron-userland/electron-builder>
+- @photostructure/tz-lookup — CC0-1.0 — <https://github.com/photostructure/tz-lookup>
+
+## Map data
+
+Map tiles are loaded at runtime from OpenStreetMap and are not shipped in the app.
+Map data © OpenStreetMap contributors, available under the Open Database License
+(<https://www.openstreetmap.org/copyright>).
 
 Build-time-only tools (Vite, electron-vite, electron-builder, TypeScript, Vitest)
 are not shipped in the app.

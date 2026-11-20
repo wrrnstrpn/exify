@@ -1,5 +1,5 @@
 import type { JSX } from 'react'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   DATE_FIELDS,
   FIELDS,
@@ -11,18 +11,26 @@ import {
   type FieldMap,
   type FieldValue
 } from '@shared/fields'
-import type { FileEdit, PhotoRecord } from '@shared/types'
+import type { FileEdit } from '@shared/types'
 import logo from '../assets/logo-dark.png'
-import { api, selectedRecords, useStore } from '../store'
+import { offsetFromGps } from '../lib/tz'
+import { api, useStore } from '../store'
 import { Check, DateTimeField, Segmented, Toggle } from './Controls'
 import { IChevronLeft, IChevronRight, IError, IFolder, IX } from './Icons'
+import { BackupsModal } from './modals/BackupsModal'
+import { CompareModal } from './modals/CompareModal'
+import { GeotagModal } from './modals/GeotagModal'
+import { ImportModal } from './modals/ImportModal'
+import { MapModal } from './modals/MapModal'
+import { RenameModal } from './modals/RenameModal'
+import { fmtDate, revealLabel, Shell, useSelection } from './Shell'
 
 export function Modals(): JSX.Element | null {
   const modal = useStore((s) => s.modal)
   if (!modal) return null
   switch (modal.kind) {
     case 'dates':
-      return <DatesModal />
+      return <DatesModal initial={modal.mode} />
     case 'sync':
       return <SyncModal />
     case 'settings':
@@ -35,58 +43,28 @@ export function Modals(): JSX.Element | null {
       return <ErrorsModal results={modal.results} />
     case 'lightbox':
       return <Lightbox path={modal.path} />
+    case 'rename':
+      return <RenameModal />
+    case 'import':
+      return <ImportModal />
+    case 'geotag':
+      return <GeotagModal />
+    case 'map':
+      return <MapModal pick={modal.pick} />
+    case 'compare':
+      return <CompareModal />
+    case 'backups':
+      return <BackupsModal />
   }
 }
 
-function Shell({ title, children, footer, width = 520, onClose }: { title: ReactNode; children: ReactNode; footer?: ReactNode; width?: number; onClose?(): void }): JSX.Element {
-  const openModal = useStore((s) => s.openModal)
-  const close = onClose ?? (() => openModal(null))
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') close()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  })
-  return (
-    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="modal" style={{ width }}>
-        <div className="modal-head">
-          <h2>{title}</h2>
-          <button className="icon-btn ghost" onClick={close}>
-            <IX size={16} />
-          </button>
-        </div>
-        <div className="modal-body">{children}</div>
-        {footer && <div className="modal-foot">{footer}</div>}
-      </div>
-    </div>
-  )
-}
 
-function useSelection(): PhotoRecord[] {
-  const selected = useStore((s) => s.selected)
-  const records = useStore((s) => s.records)
-  const index = useStore((s) => s.index)
-  const visible = useStore((s) => s.visible)
-  // In on-screen order, so "sequence" follows what the user sees.
-  return useMemo(() => {
-    const sel = selectedRecords({ selected, records, index })
-    const pos = new Map(visible.map((p, i) => [p, i]))
-    return sel.sort((a, b) => (pos.get(a.path) ?? 1e9) - (pos.get(b.path) ?? 1e9))
-  }, [selected, records, index, visible])
-}
-
-const fmtDate = (s: string | undefined | null): string => (s ? s.replace(/^(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3') : '—')
-
-// ----------------------------------------------------------- Date tools --
-
-function DatesModal(): JSX.Element {
+function DatesModal({ initial }: { initial?: 'shift' | 'sequence' | 'zone' }): JSX.Element {
   const sel = useSelection()
   const writeEdits = useStore((s) => s.writeEdits)
   const openModal = useStore((s) => s.openModal)
   const busy = useStore((s) => s.busy)
-  const [mode, setMode] = useState<'shift' | 'sequence'>('shift')
+  const [mode, setMode] = useState<'shift' | 'sequence' | 'zone'>(initial ?? 'shift')
   const [sign, setSign] = useState<'+' | '-'>('+')
   const [amt, setAmt] = useState({ d: '0', h: '0', m: '0', s: '0' })
   const [targets, setTargets] = useState<FieldKey[]>([...DATE_FIELDS])
@@ -108,6 +86,14 @@ function DatesModal(): JSX.Element {
         }
         if (Object.keys(set).length) out.push({ path: r.path, set })
       }
+    } else if (mode === 'zone') {
+      for (const r of sel) {
+        const lat = r.fields.GPSLatitude
+        const lon = r.fields.GPSLongitude
+        if (typeof lat !== 'number' || typeof lon !== 'number') continue
+        const tz = offsetFromGps(lat, lon, r.fields.DateTimeOriginal as string | undefined)
+        if (tz && tz !== r.fields.OffsetTimeOriginal) out.push({ path: r.path, set: { OffsetTimeOriginal: tz } })
+      }
     } else {
       const base = exifDateToMs(start)
       const step = Math.max(0, parseFloat(interval) || 0) * 1000
@@ -123,7 +109,8 @@ function DatesModal(): JSX.Element {
   }, [mode, sel, targets, offsetMs, start, interval])
 
   const preview = edits.slice(0, 4)
-  const label = mode === 'shift' ? `Shifted dates on ${edits.length} photos` : `Sequenced dates on ${edits.length} photos`
+  const label = { shift: 'Shifted dates', sequence: 'Sequenced dates', zone: 'Set time zone' }[mode] + ` on ${edits.length} photos`
+  const withGps = sel.filter((r) => typeof r.fields.GPSLatitude === 'number' && typeof r.fields.GPSLongitude === 'number').length
 
   return (
     <Shell
@@ -150,15 +137,23 @@ function DatesModal(): JSX.Element {
         </>
       }
     >
-      <Segmented<'shift' | 'sequence'>
+      <Segmented<'shift' | 'sequence' | 'zone'>
         value={mode}
         onChange={setMode}
         options={[
           { value: 'shift', label: 'Shift by offset' },
-          { value: 'sequence', label: 'Sequence (film scans)' }
+          { value: 'sequence', label: 'Sequence (film scans)' },
+          { value: 'zone', label: 'Time zone from GPS' }
         ]}
       />
-      {mode === 'shift' ? (
+      {mode === 'zone' ? (
+        <div className="form-block">
+          <p className="muted small">
+            Looks up the time zone at each photo's location, daylight saving included, and writes it as the UTC offset. The clock time itself isn't changed.
+            {withGps < sel.length && ` ${sel.length - withGps} of the selected photos have no location and will be skipped.`}
+          </p>
+        </div>
+      ) : mode === 'shift' ? (
         <div className="form-block">
           <p className="muted small">Fix a camera clock that was wrong or in the wrong time zone. Photos without a date are skipped.</p>
           <div className="shift-row">
@@ -173,7 +168,7 @@ function DatesModal(): JSX.Element {
         </div>
       ) : (
         <div className="form-block">
-          <p className="muted small">Give each photo a date in the order shown on screen — great for film scans that share a roll date.</p>
+          <p className="muted small">Gives each photo a date in the order shown on screen. Handy for a roll of film scans that only has a rough date.</p>
           <div className="shift-row">
             <label className="stack-label">
               <span>Start</span>
@@ -186,27 +181,30 @@ function DatesModal(): JSX.Element {
           </div>
         </div>
       )}
-      <div className="form-block">
-        <span className="small muted">Apply to</span>
+      {mode !== 'zone' && (
+        <div className="form-block">
+          <span className="small muted">Apply to</span>
         <div className="chipset">
           {DATE_FIELDS.map((k) => (
             <Check key={k} checked={targets.includes(k)} onChange={(v) => setTargets(v ? [...targets, k] : targets.filter((t) => t !== k))}>
               {FIELD_BY_KEY[k].label}
             </Check>
           ))}
+          </div>
         </div>
-      </div>
+      )}
       {preview.length > 0 && (
         <div className="preview-table">
           {preview.map((e) => {
             const r = sel.find((x) => x.path === e.path)!
             const k = (Object.keys(e.set)[0] ?? 'DateTimeOriginal') as FieldKey
+            const show = (v: unknown): string => (k === 'OffsetTimeOriginal' ? (typeof v === 'string' ? `UTC${v}` : '—') : fmtDate(v as string))
             return (
               <div key={e.path}>
                 <span className="pt-name">{r.name}</span>
-                <span className="muted">{fmtDate(r.fields[k] as string)}</span>
+                <span className="muted">{show(r.fields[k])}</span>
                 <span className="arrow">→</span>
-                <span>{fmtDate(e.set[k] as string)}</span>
+                <span>{show(e.set[k])}</span>
               </div>
             )
           })}
@@ -217,7 +215,6 @@ function DatesModal(): JSX.Element {
   )
 }
 
-// -------------------------------------------------------------- Sync ----
 
 function SyncModal(): JSX.Element {
   const sel = useSelection()
@@ -232,7 +229,7 @@ function SyncModal(): JSX.Element {
   const [keys, setKeys] = useState<FieldKey[]>(() => FIELDS.filter((f) => defaults.has(f.group) && src?.fields[f.key] != null).map((f) => f.key))
 
   if (!src) return <Shell title="Sync metadata">Select a photo to copy from first.</Shell>
-  const show = (v: FieldValue | undefined): string => (v == null ? '(empty — will clear)' : Array.isArray(v) ? v.join(', ') : String(v))
+  const show = (v: FieldValue | undefined): string => (v == null ? '(empty, will be cleared)' : Array.isArray(v) ? v.join(', ') : String(v))
 
   return (
     <Shell
@@ -252,7 +249,7 @@ function SyncModal(): JSX.Element {
               for (const k of keys) patch[k] = src.fields[k] ?? null
               setDraft(patch)
               openModal(null)
-              toast('info', `Loaded ${keys.length} fields into the editor — review, then Apply`)
+              toast('info', `Loaded ${keys.length} fields into the editor. Check them, then Apply`)
             }}
           >
             Load into editor
@@ -272,7 +269,6 @@ function SyncModal(): JSX.Element {
   )
 }
 
-// ---------------------------------------------------------- Settings ----
 
 function SettingsModal(): JSX.Element {
   const settings = useStore((s) => s.settings)
@@ -297,15 +293,77 @@ function SettingsModal(): JSX.Element {
           hint="Editing metadata won't change the file's date in Explorer, so sorting by date still works."
         />
         <Toggle
+          checked={settings.rawSidecars}
+          onChange={(v) => void update({ rawSidecars: v })}
+          label="Write RAW edits to XMP sidecars"
+          hint="Edits to CR3, NEF, ARW and other RAW files go into a “name.xmp” file next to them, which Lightroom, Capture One and darktable all read. RAW files that already have a sidecar always use it. Clearing a field in a sidecar can't remove a value stored inside the RAW."
+        />
+        <Toggle
           checked={settings.recursive}
           onChange={(v) => void update({ recursive: v })}
           label="Include subfolders"
           hint="Scan every folder below the one you open."
         />
+        <Toggle
+          checked={settings.autoUpdate}
+          onChange={(v) => void update({ autoUpdate: v })}
+          label="Check for updates on startup"
+          hint="Downloads new versions from GitHub in the background and installs them when you quit."
+        />
       </div>
+      <UpdateRow />
       <GearList title="My cameras" items={settings.customCameras} onRemove={(i) => void update({ customCameras: settings.customCameras.filter((_, j) => j !== i) })} />
       <GearList title="My lenses" items={settings.customLenses} onRemove={(i) => void update({ customLenses: settings.customLenses.filter((_, j) => j !== i) })} />
     </Shell>
+  )
+}
+
+function UpdateRow(): JSX.Element {
+  const status = useStore((s) => s.update)
+  const [version, setVersion] = useState('')
+  useEffect(() => {
+    void api.appVersion().then(setVersion)
+  }, [])
+  const text = (() => {
+    switch (status.state) {
+      case 'checking':
+        return 'Checking…'
+      case 'none':
+        return "You're on the latest version"
+      case 'available':
+        return `Version ${status.version} is out`
+      case 'downloading':
+        return `Downloading ${status.version}… ${status.percent}%`
+      case 'ready':
+        return `Version ${status.version} is ready to install`
+      case 'error':
+        return `Couldn't check: ${status.message}`
+      case 'unsupported':
+        return status.reason
+      default:
+        return ''
+    }
+  })()
+  return (
+    <div className="update-row">
+      <span>
+        Exify {version}
+        {text && <span className="muted"> · {text}</span>}
+      </span>
+      {status.state === 'ready' ? (
+        <button className="btn primary sm" onClick={() => void api.installUpdate()}>
+          Restart and update
+        </button>
+      ) : status.state === 'available' ? (
+        <button className="btn sm" onClick={() => window.open('https://github.com/wrrnstrpn/exify/releases/latest')}>
+          Download
+        </button>
+      ) : (
+        <button className="btn sm" disabled={status.state === 'checking' || status.state === 'downloading'} onClick={() => void api.checkForUpdates()}>
+          Check now
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -330,7 +388,6 @@ function GearList({ title, items, onRemove }: { title: string; items: { make: st
   )
 }
 
-// ----------------------------------------------------------- Presets ----
 
 function SavePresetModal(): JSX.Element {
   const sel = useSelection()
@@ -404,7 +461,6 @@ function SavePresetModal(): JSX.Element {
   )
 }
 
-// ------------------------------------------------------------- Strip ----
 
 function StripModal(): JSX.Element {
   const sel = useSelection()
@@ -438,13 +494,12 @@ function StripModal(): JSX.Element {
         orientation are kept so images still look right.
       </p>
       <p className={keep ? 'muted' : 'warn-text'}>
-        {keep ? 'Backups are on — originals are kept as “*_original” files.' : 'This cannot be undone. Turn on “Keep backup copies” in Settings if you want a safety net.'}
+        {keep ? 'Backups are on, so the originals are kept as “*_original” files.' : "This can't be undone. Turn on “Keep backup copies” in Settings if you want a safety net."}
       </p>
     </Shell>
   )
 }
 
-// ------------------------------------------------------------ Errors ----
 
 function ErrorsModal({ results }: { results: { path: string; error?: string }[] }): JSX.Element {
   return (
@@ -457,7 +512,7 @@ function ErrorsModal({ results }: { results: { path: string; error?: string }[] 
               <strong>{r.path.split(/[\\/]/).pop()}</strong>
               <span>{r.error}</span>
             </div>
-            <button className="icon-btn ghost xs" onClick={() => api.showInFolder(r.path)} title="Show in Explorer">
+            <button className="icon-btn ghost xs" onClick={() => api.showInFolder(r.path)} title={revealLabel}>
               <IFolder size={13} />
             </button>
           </div>
@@ -467,7 +522,6 @@ function ErrorsModal({ results }: { results: { path: string; error?: string }[] 
   )
 }
 
-// ---------------------------------------------------------- Lightbox ----
 
 function Lightbox({ path }: { path: string }): JSX.Element {
   const visible = useStore((s) => s.visible)

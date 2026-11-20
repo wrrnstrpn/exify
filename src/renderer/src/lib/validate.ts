@@ -31,7 +31,7 @@ export function isFixedLensBody(c: CameraModel): boolean {
   return c.mount.startsWith('Fixed') || c.mount === 'Phone' || c.mount === 'Drone'
 }
 
-/** Why `lens` can't go on `camera`, or null if it fits (natively or via a common first-party adapter). */
+/** Why `lens` won't go on `camera`, or null if it fits, natively or with the maker's own adapter. */
 export function mountProblem(camera: CameraModel | undefined, lens: LensModel | undefined): string | null {
   if (!camera || !lens) return null
   if (isFixedLensBody(camera)) return `${cameraName(camera)} has a built-in lens`
@@ -74,7 +74,7 @@ export function validate(f: FieldMap): Issue[] {
   const focal35 = num(f.FocalLengthIn35mmFormat)
   const fnum = num(f.FNumber)
 
-  // ---- camera identity
+  // Camera identity
   const camera = findCamera(make, model)
   if (model && make) {
     const byModel = CAMERAS.find((c) => c.model.toLowerCase() === model.toLowerCase())
@@ -83,7 +83,7 @@ export function validate(f: FieldMap): Issue[] {
     }
   }
 
-  // ---- lens identity & mount
+  // Lens identity & mount
   const lens = findLens(lensName)
   if (lens && lensMake && !sameMake(lens.make, lensMake)) {
     add('LensMake', 'warning', `“${lens.model}” is made by ${lens.make}, not ${lensMake}`)
@@ -91,7 +91,7 @@ export function validate(f: FieldMap): Issue[] {
   const mp = mountProblem(camera, lens)
   if (mp) add('LensModel', 'warning', mp)
 
-  // ---- focal length vs lens
+  // Focal length vs lens
   const spec = lensName ? parseLensSpecs(lensName) : {}
   if (focal !== undefined) {
     if (focal <= 0) add('FocalLength', 'error', 'Focal length must be greater than 0')
@@ -109,7 +109,7 @@ export function validate(f: FieldMap): Issue[] {
     }
   }
 
-  // ---- aperture vs lens
+  // Aperture vs lens
   if (fnum !== undefined) {
     if (fnum < 0.7) add('FNumber', 'error', `ƒ/${f1(fnum)} is not a real aperture`)
     else if (fnum > 128) add('FNumber', 'warning', `ƒ/${f1(fnum)} is an unusually small aperture`)
@@ -126,7 +126,7 @@ export function validate(f: FieldMap): Issue[] {
     }
   }
 
-  // ---- 35mm equivalent vs crop
+  // 35mm equivalent vs crop
   if (focal !== undefined && focal35 !== undefined && camera) {
     const crop = MOUNTS[camera.mount]?.crop ?? 0
     if (crop > 0) {
@@ -137,7 +137,16 @@ export function validate(f: FieldMap): Issue[] {
     }
   }
 
-  // ---- exposure
+  // LensInfo only has to agree with the lens name roughly; makers round differently.
+  const info = str(f.LensInfo)
+  if (info && lensName) {
+    const a = parseLensSpecs(info.replace(/\s+f\//i, ' F'))
+    if (spec.minFocal !== undefined && a.minFocal !== undefined && (Math.abs(a.minFocal - spec.minFocal) > 1 || Math.abs((a.maxFocal ?? a.minFocal) - (spec.maxFocal ?? spec.minFocal)) > 1)) {
+      add('LensInfo', 'warning', `Says ${info}, but the lens is ${lensName}`)
+    }
+  }
+
+  // Exposure
   const exp = str(f.ExposureTime)
   if (exp) {
     const s = parseExposure(exp)
@@ -147,7 +156,7 @@ export function validate(f: FieldMap): Issue[] {
   const iso = num(f.ISO)
   if (iso !== undefined && (iso < 1 || iso > 4_000_000)) add('ISO', 'warning', `ISO ${iso} is out of the usual range`)
 
-  // ---- dates
+  // Dates
   const now = Date.now() - new Date().getTimezoneOffset() * 60_000
   for (const key of ['DateTimeOriginal', 'CreateDate', 'ModifyDate'] as FieldKey[]) {
     const ms = exifDateToMs(str(f[key]))
@@ -162,13 +171,16 @@ export function validate(f: FieldMap): Issue[] {
   const tz = str(f.OffsetTimeOriginal)
   if (tz && !/^[+-](0\d|1[0-4]):[0-5]\d$/.test(tz)) add('OffsetTimeOriginal', 'error', 'Use the form +HH:MM, e.g. +01:00')
 
-  // ---- GPS
+  // GPS
   const lat = num(f.GPSLatitude)
   const lon = num(f.GPSLongitude)
   if (lat !== undefined && Math.abs(lat) > 90) add('GPSLatitude', 'error', 'Latitude must be between -90 and 90')
   if (lon !== undefined && Math.abs(lon) > 180) add('GPSLongitude', 'error', 'Longitude must be between -180 and 180')
   if ((lat === undefined) !== (lon === undefined)) add(lat === undefined ? 'GPSLatitude' : 'GPSLongitude', 'warning', 'Latitude and longitude should both be set')
-  if (lat === 0 && lon === 0) add('GPSLatitude', 'warning', '0, 0 is in the ocean off West Africa — probably a placeholder')
+  if (lat === 0 && lon === 0) add('GPSLatitude', 'warning', '0, 0 is in the sea off West Africa, so probably a placeholder')
+
+  const push = num(f.PushPull)
+  if (push !== undefined && Math.abs(push) > 4) add('PushPull', 'warning', `${push > 0 ? 'Pushing' : 'Pulling'} ${Math.abs(push)} stops is unusual`)
 
   const rating = num(f.Rating)
   if (rating !== undefined && (rating < -1 || rating > 5)) add('Rating', 'error', 'Rating must be -1 (rejected) to 5')
@@ -177,7 +189,7 @@ export function validate(f: FieldMap): Issue[] {
 }
 
 const cache = new WeakMap<FieldMap, Issue[]>()
-/** Memoised validate() for immutable record field maps. */
+// Records are replaced, never mutated, so their field maps make safe cache keys.
 export function validateCached(f: FieldMap): Issue[] {
   let r = cache.get(f)
   if (!r) {

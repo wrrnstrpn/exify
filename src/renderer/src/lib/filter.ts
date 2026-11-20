@@ -2,7 +2,7 @@ import { exifDateToMs, type FieldKey } from '@shared/fields'
 import type { PhotoRecord } from '@shared/types'
 import { validateCached, worstLevel } from './validate'
 
-export type MissingKey = 'date' | 'gps' | 'camera' | 'lens' | 'exposure' | 'copyright' | 'artist'
+export type MissingKey = 'date' | 'gps' | 'camera' | 'lens' | 'exposure' | 'copyright' | 'artist' | 'film'
 
 export interface Filters {
   text: string
@@ -73,10 +73,11 @@ const MISSING_TEST: Record<MissingKey, (r: PhotoRecord) => boolean> = {
   lens: (r) => !r.fields.LensModel,
   exposure: (r) => r.fields.FNumber == null || !r.fields.ExposureTime || r.fields.ISO == null,
   copyright: (r) => !r.fields.Copyright,
-  artist: (r) => !r.fields.Artist
+  artist: (r) => !r.fields.Artist,
+  film: (r) => !r.fields.FilmStock
 }
 
-const SEARCH_FIELDS: FieldKey[] = ['Make', 'Model', 'LensModel', 'Title', 'ImageDescription', 'Keywords', 'Artist', 'Copyright']
+const SEARCH_FIELDS: FieldKey[] = ['Make', 'Model', 'LensModel', 'FilmStock', 'Title', 'ImageDescription', 'Keywords', 'Artist', 'Copyright', 'Sublocation', 'City', 'State', 'Country']
 
 export function applyFilters(records: PhotoRecord[], f: Filters): PhotoRecord[] {
   const tokens = f.text.toLowerCase().split(/\s+/).filter(Boolean)

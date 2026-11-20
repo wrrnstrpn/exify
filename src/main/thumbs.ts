@@ -5,15 +5,14 @@ import { tmpdir } from 'node:os'
 import { join, extname } from 'node:path'
 import { exiftool } from './exif'
 
-/**
- * Serves thumbnails and previews over the custom `exify://` scheme:
- *   exify://thumb/?p=<path>&s=<px>&v=<version>
- *   exify://preview/?p=<path>&v=<version>
- *
- * Strategy: Windows shell thumbnails first (fast, cached by the OS, handles
- * RAW when codecs are installed), then decode directly, then fall back to the
- * embedded preview JPEG that ExifTool can pull out of RAW files.
- */
+// Thumbnails and previews, served over our own scheme:
+//   exify://thumb/?p=<path>&s=<px>&v=<version>
+//   exify://preview/?p=<path>&v=<version>
+// `v` only exists to bust the cache after a write.
+//
+// The OS thumbnailer goes first (Windows Explorer / macOS Quick Look): it's fast,
+// cached, and handles RAW if codecs are installed. Linux doesn't have one, so
+// there we decode JPEG/PNG directly or pull the preview ExifTool finds inside RAWs.
 
 export const SCHEME = 'exify'
 
@@ -35,7 +34,7 @@ function remember(key: string, buf: Buffer): void {
   cache.set(key, buf)
 }
 
-// Simple semaphore so a fast scroll doesn't fire 500 shell calls at once.
+// A fast scroll would otherwise fire hundreds of thumbnail calls at once.
 let active = 0
 const waiters: (() => void)[] = []
 async function acquire(): Promise<void> {

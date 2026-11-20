@@ -1,6 +1,7 @@
 import { formatExposure } from '@shared/fields'
 import type { PhotoRecord, Settings } from '@shared/types'
 import { CAMERAS, CAMERA_MAKES, MOUNTS, findCamera, sameMake, type CameraModel } from '../data/cameras'
+import { FILM_STOCKS } from '../data/films'
 import { LENSES, LENS_MAKES, findLens, isPrime, parseLensSpecs } from '../data/lenses'
 import { maxApertureAt, mountProblem } from './validate'
 
@@ -23,7 +24,9 @@ export interface Context {
   focal?: number
 }
 
-function folderValues(records: PhotoRecord[], key: 'Make' | 'Model' | 'LensModel' | 'LensMake' | 'Artist' | 'Copyright'): string[] {
+type TextKey = 'Make' | 'Model' | 'LensModel' | 'LensMake' | 'Artist' | 'Copyright' | 'FilmStock' | 'Sublocation' | 'City' | 'State' | 'Country'
+
+function folderValues(records: PhotoRecord[], key: TextKey): string[] {
   const s = new Set<string>()
   for (const r of records) {
     const v = r.fields[key]
@@ -76,8 +79,8 @@ export function modelOptions(records: PhotoRecord[], settings: Settings, ctx: Co
     out.push({ value: c.model, label: c.model, hint: c.make, group: 'My gear', data: { make: c.make, model: c.model } })
   }
   const pool = CAMERAS.filter((c) => byMake(c.make) && !seen.has(c.model))
-  for (const c of pool.filter((c) => !c.film)) out.push(cameraOption(c, ctx, ctx.make ? `${c.brand} — digital` : c.brand))
-  for (const c of pool.filter((c) => c.film)) out.push(cameraOption(c, ctx, ctx.make ? `${c.brand} — film` : `${c.brand} — film`))
+  for (const c of pool.filter((c) => !c.film)) out.push(cameraOption(c, ctx, ctx.make ? `${c.brand} · digital` : c.brand))
+  for (const c of pool.filter((c) => c.film)) out.push(cameraOption(c, ctx, `${c.brand} · film`))
   return out
 }
 
@@ -187,7 +190,7 @@ export function focalOptions(ctx: Context): Option[] {
   return FOCALS.map((f) => ({ value: String(f), label: `${f}mm` }))
 }
 
-export function textOptions(records: PhotoRecord[], key: 'Artist' | 'Copyright'): Option[] {
+export function textOptions(records: PhotoRecord[], key: TextKey): Option[] {
   return folderValues(records, key).map((v) => ({ value: v, label: v, group: 'In this folder' }))
 }
 
@@ -196,3 +199,39 @@ export function cropFor(ctx: Context): number | undefined {
   const c = cam ? MOUNTS[cam.mount]?.crop : undefined
   return c && c > 0 ? c : undefined
 }
+
+export function filmOptions(records: PhotoRecord[]): Option[] {
+  const inFolder = folderValues(records, 'FilmStock')
+  const seen = new Set(inFolder.map((v) => v.toLowerCase()))
+  const out: Option[] = inFolder.map((v) => ({ value: v, label: v, group: 'In this folder' }))
+  for (const [brand, stocks] of Object.entries(FILM_STOCKS)) {
+    for (const v of stocks) if (!seen.has(v.toLowerCase())) out.push({ value: v, label: v, group: brand })
+  }
+  return out
+}
+
+export const PUSH_OPTIONS: Option[] = [-2, -1, 0, 1, 2, 3].map((n) => ({
+  value: String(n),
+  label: n === 0 ? 'Box speed' : `${n > 0 ? 'Push +' : 'Pull '}${n}`,
+  hint: n === 0 ? undefined : `${Math.abs(n)} stop${Math.abs(n) > 1 ? 's' : ''}`
+}))
+
+/** LensInfo in the form ExifTool prints and accepts: "24-70mm f/2.8", "18-55mm f/3.5-5.6", "50mm f/1.8". */
+export function lensInfoFor(lensName: string | undefined): string | null {
+  if (!lensName) return null
+  const s = parseLensSpecs(lensName)
+  if (s.minFocal === undefined) return null
+  const focal = s.maxFocal !== undefined && s.maxFocal !== s.minFocal ? `${s.minFocal}-${s.maxFocal}mm` : `${s.minFocal}mm`
+  if (s.wideAperture === undefined) return `${focal} f/?`
+  const tele = s.teleAperture ?? s.wideAperture
+  return `${focal} f/${s.wideAperture}${tele !== s.wideAperture ? `-${tele}` : ''}`
+}
+
+export const TZ_OPTIONS: Option[] = Array.from({ length: 27 * 4 }, (_, i) => -12 * 60 + i * 15)
+  .filter((m) => m <= 14 * 60 && (m % 60 === 0 || [-570, -210, 210, 270, 330, 345, 390, 525, 570, 630, 765, 825].includes(m)))
+  .map((m) => {
+    const sign = m < 0 ? '-' : '+'
+    const a = Math.abs(m)
+    const v = `${sign}${String(Math.floor(a / 60)).padStart(2, '0')}:${String(a % 60).padStart(2, '0')}`
+    return { value: v, label: `UTC${v}` }
+  })

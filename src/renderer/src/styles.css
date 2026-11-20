@@ -9,11 +9,12 @@
   --text: #e9eaf0;
   --text-2: #b7bac7;
   --muted: #7c8092;
-  --accent: #8d7dff;
-  --accent-soft: rgba(141, 125, 255, 0.14);
-  --accent-line: rgba(141, 125, 255, 0.55);
-  --pink: #f7609a;
-  --grad: linear-gradient(120deg, #ff9d5c 0%, #f7609a 48%, #8a6cff 100%);
+  --accent: #5b9cf5;
+  --accent-soft: rgba(91, 156, 245, 0.14);
+  --accent-line: rgba(91, 156, 245, 0.55);
+  /* Filled buttons: a shade darker than --accent so white text stays readable. */
+  --accent-fill: #2f6fd6;
+  --accent-fill-hover: #3a7be2;
   --warn: #f3b24a;
   --warn-soft: rgba(243, 178, 74, 0.12);
   --err: #f2585d;
@@ -186,18 +187,16 @@ kbd {
   color: var(--text);
 }
 .btn.primary {
-  background: var(--grad);
-  border: 0;
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(247, 96, 154, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 .btn.primary:hover:not(:disabled) {
-  filter: brightness(1.08);
-  background: var(--grad);
+  background: var(--accent-fill-hover);
+  border-color: var(--accent-fill-hover);
 }
 .btn.primary:disabled {
-  opacity: 0.35;
-  box-shadow: none;
+  opacity: 0.4;
 }
 .btn.danger {
   background: var(--err);
@@ -262,6 +261,10 @@ kbd {
   background: var(--panel);
   border-bottom: 1px solid var(--line);
   -webkit-app-region: drag;
+}
+:root[data-platform='darwin'] .toolbar {
+  /* room for the traffic lights */
+  padding-left: 84px;
 }
 .toolbar .btn,
 .toolbar .icon-btn,
@@ -657,6 +660,11 @@ kbd {
 .card:hover .ext {
   opacity: 1;
 }
+.card .ext b {
+  margin-left: 3px;
+  color: var(--warn);
+  font-weight: 600;
+}
 .badge {
   position: absolute;
   top: 6px;
@@ -790,7 +798,6 @@ kbd {
   gap: 14px;
   padding: 40px;
   text-align: center;
-  background: radial-gradient(ellipse at 50% 35%, rgba(141, 125, 255, 0.09), transparent 60%);
 }
 .welcome-logo {
   width: 300px;
@@ -938,9 +945,7 @@ kbd {
 }
 .tabs button.on {
   color: var(--text);
-  border-image: var(--grad) 1;
-  border-bottom-width: 2px;
-  border-bottom-style: solid;
+  border-bottom-color: var(--accent);
 }
 
 .editor-tools {
@@ -1139,7 +1144,7 @@ textarea.field-input {
 .datefield.changed,
 .keywords.changed {
   border-color: var(--accent-line);
-  background: linear-gradient(0deg, rgba(141, 125, 255, 0.06), rgba(141, 125, 255, 0.06)), var(--bg);
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg));
 }
 .tone-warning.field-input,
 .combo.tone-warning,
@@ -1388,7 +1393,7 @@ textarea.field-input {
   color: var(--text);
 }
 .cal-day.sel {
-  background: var(--grad);
+  background: var(--accent-fill);
   color: #fff;
   font-weight: 600;
 }
@@ -1600,7 +1605,7 @@ textarea.field-input {
   transition: background 0.2s;
 }
 .editor-foot.active {
-  background: linear-gradient(0deg, rgba(141, 125, 255, 0.07), rgba(141, 125, 255, 0.02)), var(--panel);
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
 }
 .foot-info {
   flex: 1;
@@ -1724,7 +1729,7 @@ textarea.field-input {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: 2px;
-  background: var(--grad);
+  background: var(--accent);
   transition: width 0.2s;
 }
 .bar span.indeterminate {
@@ -1913,6 +1918,25 @@ textarea.field-input {
   grid-template-columns: 1.2fr 1fr 18px 1fr;
   gap: 8px;
 }
+.preview-table.rename > div {
+  grid-template-columns: 1fr 18px 1fr;
+}
+.preview-table.geotag-list > div {
+  grid-template-columns: 1fr 140px 1.5fr;
+}
+.preview-table.import > div {
+  grid-template-columns: 170px 1fr;
+}
+.preview-table.import .pt-set,
+.preview-table > div > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.preview-table > div.muted,
+.preview-table > div.small {
+  display: block;
+}
 .pt-name {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2084,4 +2108,171 @@ textarea.field-input {
   color: var(--text);
   font-size: 15px;
   pointer-events: none;
+}
+
+/* rename */
+.mono {
+  font-family: var(--mono);
+}
+.field-input.mono {
+  font-size: 12.5px;
+}
+
+/* import */
+.import-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+.import-map {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 8px;
+  max-height: 34vh;
+  overflow-y: auto;
+  padding: 2px;
+}
+.import-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+.import-head {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.import-sample {
+  font-size: 11.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 3px;
+}
+.preview-table .has-problem .pt-name {
+  color: var(--warn);
+}
+
+/* geotag + map */
+.geotag {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 18px;
+  min-height: 0;
+}
+.geotag-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.geotag-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.leaflet-host {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  overflow: hidden;
+  background: #1b1d24;
+  user-select: none;
+}
+.leaflet-host .leaflet-control-attribution {
+  background: rgba(13, 14, 18, 0.75);
+  color: var(--muted);
+}
+.leaflet-host .leaflet-control-attribution a {
+  color: var(--text-2);
+}
+.leaflet-host .leaflet-bar a {
+  background: var(--raised);
+  color: var(--text);
+  border-bottom-color: var(--line-2);
+}
+.leaflet-host .leaflet-bar a:hover {
+  background: var(--hover);
+}
+.leaflet-tooltip {
+  background: var(--raised);
+  color: var(--text);
+  border: 1px solid var(--line-2);
+  box-shadow: none;
+  font: 12px var(--font);
+}
+.leaflet-tooltip-top::before {
+  border-top-color: var(--line-2);
+}
+
+/* compare */
+.compare {
+  display: grid;
+  gap: 1px 12px;
+  align-items: center;
+  font-size: 12.5px;
+}
+.compare-thumb {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding-bottom: 10px;
+}
+.compare-thumb img {
+  width: 100%;
+  height: 150px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: var(--bg);
+}
+.compare-thumb span {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.compare-label {
+  color: var(--muted);
+  padding: 5px 0;
+}
+.compare-val {
+  padding: 5px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.compare-row.diff .compare-val {
+  color: var(--text);
+}
+.compare-row:not(.diff) .compare-val {
+  color: var(--text-2);
+}
+.compare-copy {
+  display: flex;
+  gap: 2px;
+}
+
+/* settings: updates */
+.update-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+}
+
+.group-hint {
+  grid-column: 1 / -1;
+  margin: -2px 0 0;
 }

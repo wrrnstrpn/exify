@@ -10,8 +10,12 @@ permissions:
 
 jobs:
   check:
-    # Windows to match the shipped app (bundled exiftool.exe, Windows thumbnails).
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows is what most people run; macOS and Linux use the Perl ExifTool, so test those too.
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7

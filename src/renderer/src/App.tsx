@@ -23,9 +23,12 @@ export default function App(): JSX.Element {
     void init()
     const offR = api.onRecords((jobId, recs) => useStore.getState().receiveRecords(jobId, recs))
     const offP = api.onProgress((p) => useStore.getState().setProgress(p))
+    const offU = api.onUpdateStatus((u) => useStore.getState().setUpdate(u))
+    document.documentElement.dataset.platform = api.platform
     return () => {
       offR()
       offP()
+      offU()
     }
   }, [init])
 
@@ -76,7 +79,7 @@ function Welcome(): JSX.Element {
   return (
     <div className="welcome">
       <img src={logo} alt="Exify" className="welcome-logo" />
-      <p>Batch-edit camera, lens, exposure, date and location metadata for whole folders of photos — JPEG, HEIC, TIFF and RAW.</p>
+      <p>Batch-edit camera, lens, exposure, date and location metadata for whole folders of photos: JPEG, HEIC, TIFF and RAW.</p>
       <button className="btn primary lg" onClick={() => void openFolder()}>
         <IFolder size={17} /> Open a folder
       </button>
@@ -103,7 +106,7 @@ function StatusBar({ shown }: { shown: number }): JSX.Element {
   const loading = useStore((s) => s.loading)
   const history = useStore((s) => s.history)
   const pct = progress && progress.total ? Math.round((progress.done / progress.total) * 100) : 0
-  const phase = progress?.phase === 'scan' ? 'Scanning folder…' : progress?.phase === 'read' ? 'Reading metadata' : progress?.phase === 'undo' ? 'Undoing' : 'Writing'
+  const phase = { scan: 'Scanning folder…', read: 'Reading metadata', undo: 'Undoing', rename: 'Renaming', write: 'Writing' }[progress?.phase ?? 'write']
   return (
     <footer className="statusbar">
       <span>
@@ -139,6 +142,17 @@ function Toasts(): JSX.Element {
           {t.detail && (
             <button className="link" onClick={() => openModal({ kind: 'errors', results: t.detail! })}>
               Details
+            </button>
+          )}
+          {t.action && (
+            <button
+              className="link"
+              onClick={() => {
+                t.action!.run()
+                dismiss(t.id)
+              }}
+            >
+              {t.action.label}
             </button>
           )}
           <button className="icon-btn ghost xs" onClick={() => dismiss(t.id)}>
@@ -182,7 +196,10 @@ function useKeyboard(): void {
         return
       }
       if (s.modal || isTyping()) return
-      if (mod && e.key.toLowerCase() === 'z') {
+      if (e.key === 'F2' && s.selected.size) {
+        e.preventDefault()
+        s.openModal({ kind: 'rename' })
+      } else if (mod && e.key.toLowerCase() === 'z') {
         e.preventDefault()
         void s.undo()
       } else if (mod && e.key.toLowerCase() === 'a') {
