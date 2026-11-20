@@ -1,7 +1,7 @@
 {
   "name": "exify",
   "productName": "Exify",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Fast batch EXIF metadata editor for photo folders",
   "main": "./out/main/index.js",
   "author": "wrrnstrpn",
